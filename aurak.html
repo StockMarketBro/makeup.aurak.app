@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Aura-K · Makeup Studio K-Beauty</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Julius+Sans+One&family=Questrial&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+<style>
+  /* ===== Identidad Aura-K: lavanda #9A92CE + Julius Sans One + ✦ ===== */
+  :root{
+    --lavanda:#9A92CE; --lavanda-suave:#C5C0E4; --lavanda-bruma:#EFEDF8;
+    --fondo:#F7F6FB; --blanco:#FFFFFF; --tinta:#332F45; --tinta-media:#8B86A3;
+    --acento:#E8A5B3; --line:rgba(51,47,69,.08); --radius:20px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Questrial', system-ui, sans-serif; background:var(--fondo);
+    color:var(--tinta); min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  }
+  header{
+    width:100%; padding:28px 20px 20px; text-align:center; background:var(--lavanda);
+  }
+  .eyebrow{font-size:10px; letter-spacing:.4em; color:#fff; opacity:.8; text-indent:.4em;}
+  .wordmark{
+    font-family:'Julius Sans One', sans-serif; font-size:28px; letter-spacing:.5em;
+    color:#fff; text-indent:.5em; margin-top:6px;
+  }
+  .wordmark .spark{letter-spacing:0; text-indent:0; font-size:15px; vertical-align:top;}
+  .sub{font-size:11px; letter-spacing:.32em; color:#fff; opacity:.85; margin-top:6px; text-indent:.32em;}
+  main{width:100%; max-width:520px; padding:18px 16px 40px;}
+
+  /* ---- zona de foto ---- */
+  .stage{
+    background:var(--blanco); border-radius:var(--radius); overflow:hidden;
+    box-shadow:0 8px 28px rgba(154,146,206,.16); position:relative;
+  }
+  .dropzone{padding:44px 24px; text-align:center; cursor:pointer;}
+  .dropzone .icon{font-size:32px; color:var(--lavanda);}
+  .dropzone p{margin-top:12px; font-size:15px; line-height:1.5;}
+  .dropzone small{display:block; margin-top:8px; color:var(--tinta-media); font-size:12px;}
+  .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  .btn{
+    border:none; border-radius:999px; padding:12px 22px; font-family:inherit;
+    font-size:14px; cursor:pointer; letter-spacing:.02em;
+  }
+  .btn.primary{background:var(--lavanda); color:#fff;}
+  .btn.ghost{background:var(--lavanda-bruma); color:#6F67A8;}
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+
+  .compare{position:relative; width:100%; display:none; touch-action:none;}
+  .compare canvas{display:block; width:100%; height:auto;}
+  #canvasAfter{position:absolute; inset:0; clip-path:inset(0 0 0 50%);}
+  .divider{
+    position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff;
+    box-shadow:0 0 8px rgba(0,0,0,.35); cursor:ew-resize;
+  }
+  .divider::after{
+    content:'‹ ›'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#fff; color:var(--lavanda); border-radius:999px; width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:bold;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .taglabel{
+    position:absolute; top:10px; font-size:10px; letter-spacing:.18em;
+    background:rgba(51,47,69,.55); color:#fff; padding:4px 10px; border-radius:999px;
+  }
+  .taglabel.antes{left:10px;} .taglabel.despues{right:10px;}
+  video{width:100%; display:none;}
+  .loading{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap:12px; background:rgba(247,246,251,.9); z-index:5;
+  }
+  .sparkle{font-size:30px; color:var(--lavanda); animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.3; transform:scale(.9);}50%{opacity:1; transform:scale(1.1);}}
+  @media (prefers-reduced-motion: reduce){ .sparkle{animation:none;} }
+  .loading p{font-size:13px; letter-spacing:.1em; color:var(--lavanda);}
+
+  /* ---- secciones ---- */
+  .section-label{
+    font-family:'Julius Sans One', sans-serif; font-size:12px; letter-spacing:.28em;
+    color:#6F67A8; margin:22px 4px 10px;
+  }
+  .panel{background:var(--blanco); border-radius:var(--radius); padding:16px; box-shadow:0 4px 16px rgba(154,146,206,.12);}
+  .tags{display:flex; flex-wrap:wrap; gap:8px;}
+  .tag{background:var(--lavanda-bruma); color:#6F67A8; border-radius:999px; padding:7px 13px; font-size:12.5px;}
+  .tag b{color:var(--tinta); font-weight:normal;}
+  .reco{
+    margin-top:14px; background:linear-gradient(135deg,#F2F0FA,#FBF1F4);
+    border:1.5px solid #E5E1F4; border-radius:14px; padding:13px 14px;
+    font-size:14px; line-height:1.55;
+  }
+  .reco b{color:#6F67A8;}
+  .tips{margin-top:12px;}
+  .tips li{
+    list-style:none; font-size:13.5px; line-height:1.55; margin:8px 0;
+    padding-left:20px; position:relative; color:#4E4963;
+  }
+  .tips li::before{content:'✦'; position:absolute; left:0; color:var(--acento); font-size:11px; top:3px;}
+  .applyrow{margin-top:12px; text-align:center;}
+
+  /* quiz */
+  .quiz-q{font-size:13px; color:var(--tinta-media); margin:12px 0 6px;}
+  .quiz-q:first-child{margin-top:0;}
+  .minichips{display:flex; flex-wrap:wrap; gap:7px;}
+  .minichip{
+    border:1.5px solid #E3DFF3; background:#fff; border-radius:999px; padding:8px 14px;
+    font-family:inherit; font-size:13px; cursor:pointer; color:var(--tinta);
+  }
+  .minichip.active{border-color:var(--lavanda); background:var(--lavanda-bruma); color:#5F58A0;}
+  .minichip:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+
+  /* zonas de maquillaje */
+  .zonetabs{display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:6px;}
+  .zonetabs::-webkit-scrollbar{display:none;}
+  .zonetab{
+    flex:0 0 auto; border:none; background:transparent; border-bottom:2.5px solid transparent;
+    padding:9px 13px; font-family:inherit; font-size:13.5px; cursor:pointer; color:var(--tinta-media);
+  }
+  .zonetab.active{color:#5F58A0; border-bottom-color:var(--lavanda);}
+  .zonebody{margin-top:10px;}
+  .opt-label{font-size:12px; color:var(--tinta-media); margin:12px 0 6px; letter-spacing:.05em;}
+  .opt-label:first-child{margin-top:0;}
+  .chips{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto; border:1.5px solid #E3DFF3; background:#fff; border-radius:14px;
+    padding:9px 13px; font-family:inherit; font-size:12.5px; cursor:pointer; color:var(--tinta);
+    display:flex; flex-direction:column; align-items:center; gap:5px; min-width:84px; position:relative;
+  }
+  .chip .dot{width:20px; height:20px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.15);}
+  .chip.active{border-color:var(--lavanda); background:var(--lavanda-bruma);}
+  .chip.suggested::after{
+    content:'✦'; position:absolute; top:-7px; right:-3px; background:var(--acento);
+    color:#fff; font-size:10px; padding:2px 6px; border-radius:999px;
+  }
+  .swatches{display:flex; gap:9px; flex-wrap:wrap; padding:2px;}
+  .swatch{
+    width:34px; height:34px; border-radius:50%; border:3px solid #fff; cursor:pointer;
+    box-shadow:0 1px 5px rgba(0,0,0,.18); position:relative;
+  }
+  .swatch.active{outline:3px solid var(--lavanda); outline-offset:2px;}
+  .swatch.suggested::after{
+    content:'✦'; position:absolute; top:-9px; right:-7px; color:var(--acento); font-size:12px;
+  }
+  .swatch:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+
+  /* sliders */
+  .slider-row{display:flex; align-items:center; gap:12px; margin:11px 0;}
+  .slider-row label{width:60px; font-size:13px;}
+  .slider-row input[type=range]{flex:1; accent-color:var(--lavanda);}
+  .slider-row output{width:40px; text-align:right; font-size:12px; color:var(--tinta-media);}
+  .actions{display:flex; gap:10px; margin-top:14px;}
+  .actions .btn{flex:1;}
+
+  /* productos */
+  .prod{
+    background:var(--blanco); border-radius:16px; padding:14px;
+    box-shadow:0 4px 14px rgba(154,146,206,.10); margin-bottom:12px;
+  }
+  .prod .cat{font-size:10.5px; letter-spacing:.22em; color:var(--acento); margin-bottom:4px;}
+  .prod .name{font-size:14.5px;}
+  .prod .tone{font-size:12.5px; color:var(--tinta-media); margin-top:3px;}
+  .prod .links{display:flex; gap:8px; margin-top:10px;}
+  .prod .links a{
+    flex:1; text-align:center; text-decoration:none; font-size:12.5px;
+    border-radius:999px; padding:9px 8px;
+  }
+  .prod .links a.pe{background:var(--lavanda-bruma); color:#5F58A0;}
+  .prod .links a.intl{background:var(--lavanda); color:#fff;}
+  .morebtn{
+    display:block; width:100%; margin-top:8px; border:none; background:transparent;
+    color:var(--tinta-media); font-family:inherit; font-size:12px; cursor:pointer; padding:6px;
+    letter-spacing:.04em;
+  }
+  .morestores{display:none; margin-top:6px; border-top:1px solid var(--line); padding-top:8px;}
+  .morestores.open{display:block;}
+  .morestores a{
+    display:flex; justify-content:space-between; align-items:center;
+    text-decoration:none; color:#5F58A0; font-size:12.5px; padding:8px 6px;
+    border-radius:10px;
+  }
+  .morestores a:active{background:var(--lavanda-bruma);}
+  .morestores a::after{content:'→'; color:var(--lavanda);}
+
+  .note{margin-top:16px; font-size:11.5px; color:var(--tinta-media); text-align:center; line-height:1.55;}
+  .error{
+    display:none; margin-top:12px; background:#FBEDEF; color:#A94456; border-radius:12px;
+    padding:12px 14px; font-size:13px; line-height:1.5;
+  }
+  #controls{display:none;}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">K-BEAUTY</div>
+  <div class="wordmark">AURA-K <span class="spark">✦</span></div>
+  <div class="sub">MAKEUP STUDIO</div>
+</header>
+
+<main>
+  <div class="stage">
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Tomar o subir una foto">
+      <div class="icon">✦</div>
+      <p>Tómate una selfie sin maquillaje<br>o sube una foto desde tu galería</p>
+      <div class="btnrow">
+        <button class="btn primary" id="btnCamera">Tomar selfie</button>
+        <button class="btn ghost" id="btnUpload">Subir foto</button>
+      </div>
+      <small>Luz natural · rostro despejado<br>Tu foto se analiza al momento y no se guarda en ningún servidor.</small>
+    </div>
+
+    <video id="video" playsinline autoplay muted></video>
+    <div class="btnrow" id="captureRow" style="display:none; padding-bottom:18px;">
+      <button class="btn primary" id="btnCapture">Capturar</button>
+      <button class="btn ghost" id="btnCancelCam">Cancelar</button>
+    </div>
+
+    <div class="compare" id="compare">
+      <canvas id="canvasBefore"></canvas>
+      <canvas id="canvasAfter"></canvas>
+      <div class="divider" id="divider"></div>
+      <span class="taglabel antes">ANTES</span>
+      <span class="taglabel despues">DESPUÉS</span>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="sparkle">✦</div>
+      <p>Observando tu rostro, tono y rasgos…</p>
+    </div>
+  </div>
+
+  <div class="error" id="error"></div>
+
+  <div id="controls">
+    <div class="section-label">TU ANÁLISIS ✦</div>
+    <div class="panel">
+      <div class="tags" id="analysisTags"></div>
+      <ul class="tips" id="analysisTips"></ul>
+    </div>
+
+    <div class="section-label">TU ESTILO ✦</div>
+    <div class="panel">
+      <div class="quiz-q">¿Para qué ocasión?</div>
+      <div class="minichips" data-quiz="ocasion">
+        <button class="minichip" data-v="diario">Diario</button>
+        <button class="minichip" data-v="trabajo">Trabajo</button>
+        <button class="minichip" data-v="noche">Salida / Noche</button>
+        <button class="minichip" data-v="evento">Evento especial</button>
+      </div>
+      <div class="quiz-q">¿Qué intensidad prefieres?</div>
+      <div class="minichips" data-quiz="intensidad">
+        <button class="minichip" data-v="sutil">Sutil</button>
+        <button class="minichip" data-v="media">Media</button>
+        <button class="minichip" data-v="marcada">Marcada</button>
+      </div>
+      <div class="quiz-q">¿Cuál es tu vibe?</div>
+      <div class="minichips" data-quiz="vibe">
+        <button class="minichip" data-v="dulce">Dulce y suave</button>
+        <button class="minichip" data-v="fresco">Fresco y natural</button>
+        <button class="minichip" data-v="elegante">Elegante</button>
+        <button class="minichip" data-v="atrevido">Atrevido</button>
+      </div>
+      <div class="reco" id="recoBox"></div>
+      <div class="applyrow"><button class="btn primary" id="btnApplyReco">Aplicar sugerencia ✦</button></div>
+    </div>
+
+    <div class="section-label">PERSONALIZA TU LOOK</div>
+    <div class="panel">
+      <div class="zonetabs" id="zonetabs">
+        <button class="zonetab active" data-zone="general">General</button>
+        <button class="zonetab" data-zone="piel">Piel</button>
+        <button class="zonetab" data-zone="ojos">Ojos</button>
+        <button class="zonetab" data-zone="labios">Labios</button>
+        <button class="zonetab" data-zone="cejas">Cejas</button>
+      </div>
+
+      <div class="zonebody" data-body="general">
+        <div class="opt-label">Look completo</div>
+        <div class="chips" id="lookChips"></div>
+      </div>
+
+      <div class="zonebody" data-body="piel" hidden>
+        <div class="opt-label">Acabado de piel</div>
+        <div class="chips" id="skinChips"></div>
+      </div>
+
+      <div class="zonebody" data-body="ojos" hidden>
+        <div class="opt-label">Sombra</div>
+        <div class="chips" id="shadowChips"></div>
+        <div class="opt-label">Delineado</div>
+        <div class="chips" id="linerChips"></div>
+      </div>
+
+      <div class="zonebody" data-body="labios" hidden>
+        <div class="opt-label">Estilo de labios</div>
+        <div class="chips" id="lipStyleChips"></div>
+        <div class="opt-label">Color</div>
+        <div class="swatches" id="lipSwatches"></div>
+      </div>
+
+      <div class="zonebody" data-body="cejas" hidden>
+        <div class="opt-label">Definición de cejas</div>
+        <div class="chips" id="browChips"></div>
+      </div>
+    </div>
+
+    <div class="section-label">INTENSIDAD</div>
+    <div class="panel">
+      <div class="slider-row"><label for="sLips">Labios</label><input type="range" id="sLips" min="0" max="200" value="100"><output>100%</output></div>
+      <div class="slider-row"><label for="sBlush">Rubor</label><input type="range" id="sBlush" min="0" max="200" value="100"><output>100%</output></div>
+      <div class="slider-row"><label for="sEyes">Ojos</label><input type="range" id="sEyes" min="0" max="200" value="100"><output>100%</output></div>
+      <div class="slider-row"><label for="sGlow">Brillo</label><input type="range" id="sGlow" min="0" max="200" value="100"><output>100%</output></div>
+      <div class="actions">
+        <button class="btn ghost" id="btnReset">Otra foto</button>
+        <button class="btn primary" id="btnDownload">Descargar look</button>
+      </div>
+    </div>
+
+    <div class="section-label">PRODUCTOS PARA ESTE LOOK</div>
+    <div id="products"></div>
+
+    <p class="note">
+      El maquillaje se aplica como capas de color translúcidas sobre tu foto original: tu rostro no se modifica ni se regenera.<br><br>
+      Este análisis es cosmético y orientativo, generado con IA a partir de tu foto; no es un diagnóstico
+      ni una recomendación profesional. Los enlaces a tiendas pueden incluir código de referido:
+      si compras a través de ellos, Aura-K puede recibir una comisión sin costo adicional para ti.
+    </p>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" hidden>
+</main>
+
+<script>
+/* ============ AURA-K Makeup Studio v3 ============
+   · Análisis con IA local (gratis): tono, subtono, forma
+     de rostro, labios, ojos → sugerencias + quiz de estilo.
+   · Personalización por zonas: piel, ojos (sombra +
+     delineado), labios (estilo + color), cejas.
+   · Productos con links DIRECTOS: Asian Shop (Perú) y
+     YesStyle (internacional). Para afiliados, agrega tu
+     parámetro en AFF (YesStyle) al tener tu código.
+================================================== */
+
+// ---------- Landmarks (MediaPipe FaceMesh) ----------
+const LIPS_OUTER=[61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146];
+const LIPS_INNER=[78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95];
+const EYE_L={top:159,bottom:145,inner:133,outer:33};
+const EYE_R={top:386,bottom:374,inner:362,outer:263};
+const LID_L=[133,173,157,158,159,160,161,246,33];   // interno → externo
+const LID_R=[362,398,384,385,386,387,388,466,263];
+const BROW_L=[70,63,105,66,107,55,65,52,53,46];
+const BROW_R=[300,293,334,296,336,285,295,282,283,276];
+const CHEEK_L=50, CHEEK_R=280, CHEEKBONE_L=117, CHEEKBONE_R=346;
+const NOSE_TOP=168, NOSE_TIP=4, FOREHEAD=10, CHIN=152, LIP_TOP=0;
+const FACE_L=234, FACE_R=454, JAW_L=172, JAW_R=397;
+
+// ---------- Opciones por zona ----------
+const LOOKS={
+  clean:{name:'Clean natural', dot:'#C87F82', set:{lipStyle:'mlbb', lipColor:'#C87F82', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFAFA8',alpha:.22}, glow:.26, aegyo:.14}},
+  sobrio:{name:'Sobrio elegante', dot:'#B4707E', set:{lipStyle:'mlbb', lipColor:'#B4707E', skinFinish:'dewy', shadow:'tierra', liner:'idol', brow:'castano', blush:{color:'#E3A79E',alpha:.18}, glow:.22, aegyo:.12}},
+  peach:{name:'Peach coreano', dot:'#DD8B6A', set:{lipStyle:'mlbb', lipColor:'#DD8B6A', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFA981',alpha:.24}, glow:.26, aegyo:.14}},
+  gradient:{name:'Gradient lips', dot:'#C9505C', set:{lipStyle:'gradient', lipColor:'#C9505C', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EDAEA8',alpha:.20}, glow:.24, aegyo:.14}},
+  glass:{name:'Glass skin', dot:'#DCA3A8', set:{lipStyle:'mlbb', lipColor:'#D0919A', skinFinish:'glass', shadow:'rosa', liner:'idol', brow:'gris', blush:{color:'#F0BCB8',alpha:.18}, glow:.46, aegyo:.20}},
+  idol:{name:'Idol K-pop', dot:'#C25563', set:{lipStyle:'gradient', lipColor:'#C25563', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EC97A5',alpha:.30}, glow:.42, aegyo:.24}}
+};
+const SKIN_FINISHES={
+  glass:{name:'Glass skin', dot:'#F6EDF2', glow:.44},
+  dewy:{name:'Dewy natural', dot:'#F2E4DE', glow:.26},
+  matte:{name:'Mate suave', dot:'#E8DDD6', glow:0},
+};
+const SHADOWS={
+  durazno:{name:'Durazno coral', dot:'#E79A78', color:'#DD8A66', alpha:.24},
+  rosa:{name:'Rosa coreano', dot:'#DE97A0', color:'#D07F88', alpha:.24},
+  tierra:{name:'Marrón tierra', dot:'#B08466', color:'#9C6D4E', alpha:.24},
+  malva:{name:'Malva', dot:'#A98BA4', color:'#96738F', alpha:.23},
+  none:{name:'Sin sombra', dot:'#FFFFFF', color:null, alpha:0},
+};
+const LINERS={
+  idol:{name:'Idol (adaptativo)'},
+  puppy:{name:'Puppy liner'},
+  classic:{name:'Almendrado'},
+  none:{name:'Sin delineado'},
+};
+const BROWS={
+  castano:{name:'Castaño', dot:'#6B4A38', color:'#5E4030', alpha:.20},
+  gris:{name:'Gris-marrón', dot:'#5C4F47', color:'#4E453E', alpha:.19},
+  none:{name:'Sin cambio', dot:'#FFFFFF', color:null, alpha:0},
+};
+const LIP_STYLES={
+  gradient:{name:'Gradient', grad:1, mult:1.35},
+  full:{name:'Color completo', grad:.15, mult:1.15},
+  mlbb:{name:'MLBB suave', grad:.35, mult:.75},
+};
+const LIP_COLORS=[
+  {hex:'#C05A63', name:'Rojo suave', tone:'neutral'},
+  {hex:'#A85A6B', name:'Berry suave', tone:'cool'},
+  {hex:'#B4707E', name:'Malva rosa', tone:'cool'},
+  {hex:'#C87F82', name:'Rosa MLBB', tone:'neutral'},
+  {hex:'#CE7F6B', name:'Coral suave', tone:'warm'},
+  {hex:'#DD8B6A', name:'Durazno', tone:'warm'},
+];
+
+// ---------- Catálogo con LINKS DIRECTOS (verificados) ----------
+// Afiliados: cuando tengas tu código YesStyle/afiliado local, agrega el parámetro aquí.
+const AFF='';  // ej: '?rco=TUCODIGO'
+const PRODUCTS=[
+  {zone:'Labios', cat:'TINTE DE LABIOS', name:'Rom&nd · The Juicy Lasting Tint',
+   tones:{warm:'#09 Litchi Coral / #23 Nucadamia', cool:'#25 Bare Grape / #12 Cherry Bomb', neutral:'#06 Figfig / #01 Pomelo Skin'},
+   cond:s=>true,
+   pe:'https://asianshop.com.pe/producto/romand-juicy-lasting-tint-sparkling-series/',
+   intl:'https://www.yesstyle.com/en/romand-the-juicy-lasting-tint-23-colors-01-pomelo-skin/info.html/pid.1134228333'},
+  {zone:'Labios', cat:'TINTE VELVET (GRADIENT)', name:'Peripera · Ink Velvet',
+   tones:{warm:'#33 Pure Red', cool:'#08 Sellout Red', neutral:'#25 Cinnamon Nude'},
+   cond:s=>s.lipStyle==='gradient'||s.look==='douyin',
+   pe:'https://asianshop.com.pe/tienda/',
+   intl:'https://www.yesstyle.com/en/peripera-ink-velvet-31-colors-19-love-sniper-red/info.html/pid.1057853640'},
+  {zone:'Labios', cat:'PREPARACIÓN DE LABIOS', name:'Laneige · Lip Sleeping Mask',
+   tones:null,
+   cond:s=>s.lipStyle==='gradient',
+   pe:'https://asianshop.com.pe/tienda/',
+   intl:'https://www.yesstyle.com/en/laneige-lip-sleeping-mask-ex-berry-new-mint-choco-ex/info.html/pid.1039417845'},
+  {zone:'Piel', cat:'CUSHION', name:'TIRTIR · Mask Fit Red Cushion',
+   tones:{warm:'#23N Sand / #21W', cool:'#21N Ivory / #17C', neutral:'#21N–#23N'},
+   cond:s=>true,
+   pe:'https://asianshop.com.pe/tienda/',
+   intl:'https://www.yesstyle.com/en/tirtir-mask-fit-red-cushion-40-colors-55n-espresso/info.html/pid.1117014693'},
+  {zone:'Piel', cat:'ESENCIA', name:'COSRX · Advanced Snail 96 Mucin',
+   tones:null,
+   cond:s=>s.skinFinish!=='matte',
+   pe:'https://asianshop.com.pe/marca/cosrx/',
+   intl:'https://www.yesstyle.com/en/cosrx-advanced-snail-96-mucin-power-essence-100ml/info.html/pid.1052684695'},
+  {zone:'Piel', cat:'SÉRUM GLOW', name:'Beauty of Joseon · Glow Serum',
+   tones:null,
+   cond:s=>s.skinFinish==='glass',
+   pe:'https://asianshop.com.pe/tienda/',
+   intl:'https://www.yesstyle.com/en/beauty-of-joseon-glow-serum-30ml/info.html/pid.1089210994'},
+  {zone:'Rubor', cat:'RUBOR', name:'Peripera · Pure Blushed Sunshine Cheek',
+   tones:{warm:'#03 Coral / #12 Apricot', cool:'#02 Pink', neutral:'#12 Apricot'},
+   cond:s=>true,
+   pe:'https://asianshop.com.pe/producto/peripera-pure-blushed-sunshine-cheek/',
+   intl:'https://www.yesstyle.com/en/peripera/list.html/bpt.299_bid.313728'},
+  {zone:'Rubor', cat:'RUBOR (ALTERNATIVA)', name:'Rom&nd · Better Than Cheek',
+   tones:{warm:'#07 Pear Chip / #02 Mango', cool:'#03 Blueberry / #01 Prune', neutral:'#04 Pinkcoat'},
+   cond:s=>true,
+   pe:'https://asianshop.com.pe/tienda/',
+   intl:'https://www.yesstyle.com/en/romand-better-than-cheek-new-9-colors-c04-pear-chip/info.html/pid.1117526059'},
+  {zone:'Ojos', cat:'PALETA DE SOMBRAS', name:'Rom&nd · Better Than Palette',
+   tones:{warm:'#08 Peach Dahlia Garden', cool:'Rose / Mauve tones', neutral:'#08 Peach Dahlia Garden'},
+   cond:s=>s.shadow!=='none',
+   pe:'https://asianshop.com.pe/producto/romand-better-than-palette-08-peach-dahlia-garden/',
+   intl:'https://www.yesstyle.com/en/romand/list.html/bpt.299_bid.322521'},
+  {zone:'Ojos', cat:'DELINEADOR', name:'Clio · Sharp Liner (Kill series)',
+   tones:{warm:'Marrón cacao', cool:'Negro / gris', neutral:'Marrón oscuro'},
+   cond:s=>s.liner!=='none',
+   pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
+   intl:'https://www.yesstyle.com/en/clio/list.html/bpt.299_bid.314578'},
+  {zone:'Cejas', cat:'CEJAS', name:'Lápiz / sombra de cejas K-beauty',
+   tones:{warm:'Castaño cálido', cool:'Gris-marrón', neutral:'Castaño medio'},
+   cond:s=>s.brow!=='none',
+   pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
+   intl:'https://www.yesstyle.com/en/romand/list.html/bpt.299_bid.322521'},
+  {zone:'Brillo', cat:'ILUMINADOR', name:'Clio · Prism Air Highlighter',
+   tones:{warm:'#01 Gold Sheer', cool:'#02 Fairy Pink', neutral:'#01 Gold Sheer'},
+   cond:s=>s.skinFinish!=='matte',
+   pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
+   intl:'https://www.yesstyle.com/en/clio-prism-air-highlighter-4-colors-04-pink-sparkling/info.html/pid.1067975890'},
+];
+
+// ---------- Estado ----------
+let landmarks=null, baseImg=null, stream=null, analysis=null;
+let settings={look:'clean', ...JSON.parse(JSON.stringify(LOOKS.clean.set))};
+let quiz={ocasion:null, intensidad:null, vibe:null};
+let reco=null;
+const MAXW=1280;
+
+// ---------- DOM ----------
+const $=id=>document.getElementById(id);
+const dropzone=$('dropzone'), fileInput=$('fileInput'), video=$('video'),
+      captureRow=$('captureRow'), compare=$('compare'), loading=$('loading'),
+      errBox=$('error'), controls=$('controls'),
+      cvB=$('canvasBefore'), cvA=$('canvasAfter'),
+      ctxB=cvB.getContext('2d',{willReadFrequently:true}), ctxA=cvA.getContext('2d');
+
+// ---------- FaceMesh ----------
+const faceMesh=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${f}`});
+faceMesh.setOptions({maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:.5});
+faceMesh.onResults(onResults);
+
+// ---------- Entradas ----------
+$('btnCamera').onclick=async e=>{
+  e.stopPropagation(); hideError();
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280}}});
+    video.srcObject=stream;
+    dropzone.style.display='none'; video.style.display='block'; captureRow.style.display='flex';
+  }catch(err){
+    showError('No se pudo acceder a la cámara. Revisa los permisos del navegador o sube una foto.');
+  }
+};
+$('btnUpload').onclick=e=>{ e.stopPropagation(); fileInput.click(); };
+dropzone.onclick=()=>fileInput.click();
+dropzone.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') fileInput.click(); };
+fileInput.onchange=e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const img=new Image();
+  img.onload=()=>processImage(img);
+  img.onerror=()=>showError('No se pudo leer esa imagen. Prueba con un JPG o PNG.');
+  img.src=URL.createObjectURL(file);
+};
+$('btnCancelCam').onclick=()=>{ stopCam(); resetToDrop(); };
+$('btnCapture').onclick=()=>{
+  const c=document.createElement('canvas');
+  c.width=video.videoWidth; c.height=video.videoHeight;
+  const cx=c.getContext('2d');
+  cx.translate(c.width,0); cx.scale(-1,1);
+  cx.drawImage(video,0,0);
+  stopCam();
+  const img=new Image();
+  img.onload=()=>processImage(img);
+  img.src=c.toDataURL('image/png');
+};
+function stopCam(){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  video.style.display='none'; captureRow.style.display='none';
+}
+
+async function processImage(img){
+  hideError();
+  loading.style.display='flex';
+  dropzone.style.display='none';
+  const scale=Math.min(1, MAXW/img.naturalWidth);
+  const w=Math.round(img.naturalWidth*scale), h=Math.round(img.naturalHeight*scale);
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  c.getContext('2d').drawImage(img,0,0,w,h);
+  baseImg=c;
+  try{ await faceMesh.send({image:c}); }
+  catch(err){
+    loading.style.display='none';
+    showError('El motor de análisis facial no cargó. Verifica tu conexión y recarga la página.');
+    resetToDrop();
+  }
+}
+
+function onResults(res){
+  loading.style.display='none';
+  if(!res.multiFaceLandmarks || !res.multiFaceLandmarks.length){
+    showError('No se detectó un rostro. Usa una foto de frente, con buena luz y sin obstrucciones.');
+    resetToDrop(); return;
+  }
+  landmarks=res.multiFaceLandmarks[0];
+  cvB.width=cvA.width=baseImg.width;
+  cvB.height=cvA.height=baseImg.height;
+  ctxB.drawImage(baseImg,0,0);
+  compare.style.display='block';
+  controls.style.display='block';
+
+  analysis=analyzeFace();
+  computeReco();          // el mejor look posible (análisis + quiz)
+  applyReco();            // se aplica de inmediato
+  renderAnalysis(); buildAllChips(); renderProducts(); render();
+  setSplit(28);           // el DESPUÉS domina la vista apenas termina el análisis
+  compare.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ---------- Utilidades ----------
+const P=i=>({x:landmarks[i].x*cvA.width, y:landmarks[i].y*cvA.height});
+const dist=(a,b)=>Math.hypot(a.x-b.x, a.y-b.y);
+function pathPoly(ctx,idxs){
+  const p0=P(idxs[0]); ctx.moveTo(p0.x,p0.y);
+  for(let i=1;i<idxs.length;i++){ const p=P(idxs[i]); ctx.lineTo(p.x,p.y); }
+  ctx.closePath();
+}
+function radial(ctx,x,y,r,color,aIn,aOut=0){
+  const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,hexA(color,aIn)); g.addColorStop(1,hexA(color,aOut));
+  return g;
+}
+function hexA(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;
+}
+
+// ---------- ANÁLISIS FACIAL (IA local, gratis) ----------
+function samplePatch(cx,cy,r){
+  const d=ctxB.getImageData(Math.max(0,cx-r),Math.max(0,cy-r),r*2,r*2).data;
+  let R=0,G=0,B=0,n=0;
+  for(let i=0;i<d.length;i+=16){ R+=d[i]; G+=d[i+1]; B+=d[i+2]; n++; }
+  return {r:R/n, g:G/n, b:B/n};
+}
+function analyzeFace(){
+  const faceW=dist(P(FACE_L),P(FACE_R)), faceH=dist(P(FOREHEAD),P(CHIN));
+  const jawW=dist(P(JAW_L),P(JAW_R));
+  const s1=samplePatch(P(FOREHEAD).x, P(FOREHEAD).y+faceW*.06, 8);
+  const s2=samplePatch(P(CHEEK_L).x, P(CHEEK_L).y, 8);
+  const s3=samplePatch(P(CHEEK_R).x, P(CHEEK_R).y, 8);
+  const r=(s1.r+s2.r+s3.r)/3, g=(s1.g+s2.g+s3.g)/3, b=(s1.b+s2.b+s3.b)/3;
+  const lum=.299*r+.587*g+.114*b;
+  const depth= lum>185?'clara': lum>140?'media':'morena';
+  const rb=r-b;
+  const undertone= rb>34?'warm': rb<20?'cool':'neutral';
+  const undertoneTxt={warm:'cálido',cool:'frío',neutral:'neutro'}[undertone];
+  const ratio=faceH/faceW, jawRatio=jawW/faceW;
+  let shape;
+  if(ratio>=1.5) shape='alargado';
+  else if(ratio<=1.32) shape= jawRatio>=.88?'cuadrado':'redondo';
+  else shape= jawRatio<.74?'corazón':'ovalado';
+  const lipRatio=dist(P(LIP_TOP),P(17))/dist(P(61),P(291));
+  const lips= lipRatio>.44?'llenos': lipRatio<.32?'finos':'medios';
+  const inter=dist(P(EYE_L.inner),P(EYE_R.inner));
+  const eyeW=dist(P(EYE_L.outer),P(EYE_L.inner));
+  const eyes= inter>eyeW*1.28?'separados': inter<eyeW*.95?'juntos':'proporcionados';
+  // Apertura del ojo (alto/ancho): decide si conviene agrandar o solo delinear
+  const apert=((dist(P(EYE_L.top),P(EYE_L.bottom))/dist(P(EYE_L.outer),P(EYE_L.inner)))
+             +(dist(P(EYE_R.top),P(EYE_R.bottom))/dist(P(EYE_R.outer),P(EYE_R.inner))))/2;
+  const eyeSize= apert>=.36?'grandes': apert<=.28?'pequeños':'medios';
+  const linerMode= eyeSize==='grandes'?'solo-delineado':'agrandar';
+
+  const tips=[];
+  tips.push(`Piel ${depth} de subtono ${undertoneTxt}: te favorecen los ${undertone==='warm'?'corales, duraznos y terracotas':undertone==='cool'?'rosas, berries y rojos azulados':'rosas té, malvas y corales suaves'}.`);
+  if(shape==='redondo'||shape==='cuadrado') tips.push('Aplica el rubor en diagonal hacia la sien: alarga visualmente el rostro.');
+  else if(shape==='alargado') tips.push('Aplica el rubor en horizontal sobre las mejillas: acorta visualmente el rostro.');
+  else tips.push(`Rostro ${shape}: el rubor al centro de la mejilla, estilo coreano clásico, te sienta muy bien.`);
+  if(lips==='finos') tips.push('El gradient lip (color intenso al centro, difuminado al borde) crea efecto de mayor volumen.');
+  else if(lips==='llenos') tips.push('Tus labios llenos lucen con tintes ligeros MLBB; no necesitas capas gruesas.');
+  else tips.push('Labios medios: puedes alternar entre gradient y color completo según la ocasión.');
+  if(eyes==='juntos') tips.push('Ilumina el lagrimal y concentra sombra y delineado en el tercio externo del ojo.');
+  else if(eyes==='separados') tips.push('Concentra la sombra hacia el lagrimal para equilibrar la mirada.');
+  if(linerMode==='agrandar') tips.push('Ojos '+eyeSize+': delineado ajustado a la línea de pestañas, un poco de sombra bajo el párpado inferior y luz en el lagrimal abren la mirada sin que se note maquillaje encima.');
+  else tips.push('Ojos grandes: con un delineado limpio que siga tu línea natural es suficiente; recargar solo los achica.');
+
+  return {depth, undertone, undertoneTxt, shape, lips, eyes, eyeSize, linerMode, tips, faceW};
+}
+
+// ---------- Recomendación (análisis + quiz) ----------
+// La IA elige el look y calibra la intensidad de CADA zona según los rasgos
+// de la persona. El resultado busca verse natural, sobrio y bien terminado.
+function computeReco(){
+  const A=analysis;
+
+  // --- Elección de look: por defecto lo natural ---
+  let look='clean';
+  let why='una base luminosa, labios MLBB y una mirada definida sin recargar';
+
+  if(A.undertone==='warm'){ look='peach'; why='los tonos durazno acompañan tu subtono cálido de forma natural'; }
+  else if(A.undertone==='cool'){ look='sobrio'; why='los rosas y malvas suaves favorecen tu subtono frío'; }
+
+  // El quiz refina
+  if(quiz.vibe==='fresco'){ look='glass'; why='piel luminosa y color mínimo, para un efecto fresco'; }
+  if(quiz.vibe==='elegante'){ look='sobrio'; why='color contenido y acabado pulido, para un resultado elegante'; }
+  if(quiz.vibe==='dulce'){ look='peach'; why='tonos durazno y rubor suave, para un aire dulce'; }
+  if(quiz.ocasion==='trabajo'){ look='sobrio'; why='discreto y bien terminado para el día a día laboral'; }
+  if(A.lips==='finos'&&look!=='glass'){ look='gradient'; why='el degradado da volumen a labios finos sin verse cargado'; }
+
+  // El look idol solo si la persona y el contexto realmente lo piden:
+  // rasgos que lo sostienen (ojos definidos o labios llenos) + ocasión de impacto.
+  const sostieneIdol = (A.eyeSize!=='pequeños') || (A.lips==='llenos');
+  if(quiz.vibe==='atrevido' && (quiz.ocasion==='noche'||quiz.ocasion==='evento') && sostieneIdol){
+    look='idol'; why='tus rasgos sostienen un look de escenario y la ocasión lo permite';
+  }
+
+  const set=JSON.parse(JSON.stringify(LOOKS[look].set));
+
+  // --- Color de labios afinado al subtono ---
+  const recColor= A.undertone==='warm'?LIP_COLORS[5]: A.undertone==='cool'?LIP_COLORS[2]:LIP_COLORS[3];
+  if(look!=='idol'&&look!=='peach') set.lipColor=recColor.hex;
+
+  // --- Ojos: la app decide si conviene abrir la mirada o solo delinear ---
+  set.liner = A.linerMode==='agrandar' ? 'idol' : (look==='idol'?'classic':'idol');
+  if(look==='glass'&&A.eyeSize==='grandes') set.shadow='rosa';
+
+  // --- Intensidad calibrada POR ZONA según los rasgos ---
+  // base neutra 100; se ajusta hacia arriba o abajo según lo que le siente mejor.
+  let kL=100, kB=100, kE=100, kG=100;
+
+  // Labios: los llenos necesitan menos producto; los finos, algo más de color.
+  if(A.lips==='llenos') kL-=25; else if(A.lips==='finos') kL+=10;
+  // Piel morena admite (y necesita) algo más de pigmento para que se lea.
+  if(A.depth==='morena'){ kL+=15; kB+=15; }
+  else if(A.depth==='clara'){ kL-=8; kB-=15; kG-=10; }   // en piel clara todo se nota más
+  // Rostro ancho/redondo: el rubor difuso ayuda; el alargado, menos.
+  if(A.shape==='redondo'||A.shape==='cuadrado') kB+=8;
+  else if(A.shape==='alargado') kB-=8;
+  // Ojos: los grandes solo necesitan definición; los pequeños, un poco más de trabajo.
+  if(A.eyeSize==='grandes') kE-=12; else if(A.eyeSize==='pequeños') kE+=15;
+  // El glow se modera en piel clara y sube un punto en piel media/morena.
+  if(A.depth!=='clara') kG+=8;
+
+  // El quiz mueve todo el conjunto sin romper el equilibrio anterior.
+  const mult= quiz.intensidad==='sutil'?.72: quiz.intensidad==='marcada'?1.28:1;
+  const clamp=v=>Math.max(30,Math.min(180,Math.round(v*mult)));
+  const k={lips:clamp(kL), blush:clamp(kB), eyes:clamp(kE), glow:clamp(kG)};
+
+  const ojosTxt = A.linerMode==='agrandar'
+    ? 'delineado ajustado que abre la mirada'
+    : 'delineado limpio, sin recargar tus ojos';
+
+  reco={look, set, k, recColor,
+    texto:`Te sugerimos <b>${LOOKS[look].name}</b>: ${why}. ` +
+      `Labios en <b>${(look==='idol'||look==='peach'?LOOKS[look].name.toLowerCase():recColor.name.toLowerCase())}</b> ` +
+      `y ${ojosTxt}. Las intensidades ya vienen calibradas a tus rasgos; ajústalas si quieres.`};
+  const box=$('recoBox');
+  if(box) box.innerHTML=reco.texto;
+}
+function applyReco(){
+  settings={look:reco.look, ...JSON.parse(JSON.stringify(reco.set))};
+  const map={sLips:reco.k.lips, sBlush:reco.k.blush, sEyes:reco.k.eyes, sGlow:reco.k.glow};
+  for(const id in map){
+    $(id).value=map[id];
+    $(id).nextElementSibling.value=map[id]+'%';
+  }
+  buildAllChips(); renderProducts(); render();
+}
+$('btnApplyReco')?.addEventListener('click',()=>applyReco());
+
+// Quiz chips
+document.querySelectorAll('.minichips').forEach(group=>{
+  group.querySelectorAll('.minichip').forEach(b=>{
+    b.onclick=()=>{
+      group.querySelectorAll('.minichip').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      quiz[group.dataset.quiz]=b.dataset.v;
+      computeReco();
+    };
+  });
+});
+
+function renderAnalysis(){
+  const A=analysis;
+  $('analysisTags').innerHTML=`
+    <span class="tag">Piel: <b>${A.depth}, subtono ${A.undertoneTxt}</b></span>
+    <span class="tag">Rostro: <b>${A.shape}</b></span>
+    <span class="tag">Labios: <b>${A.lips}</b></span>
+    <span class="tag">Ojos: <b>${A.eyes}</b></span>`;
+  $('analysisTips').innerHTML=A.tips.map(t=>`<li>${t}</li>`).join('');
+}
+
+// ---------- Chips por zona ----------
+function chipRow(elId, options, current, onPick, suggestedKey){
+  const el=$(elId); el.innerHTML='';
+  for(const key in options){
+    const o=options[key];
+    const b=document.createElement('button');
+    b.className='chip'+(key===current?' active':'')+(key===suggestedKey?' suggested':'');
+    b.innerHTML=(o.dot?`<span class="dot" style="background:${o.dot}"></span>`:'')+o.name;
+    b.onclick=()=>{ onPick(key); buildAllChips(); renderProducts(); render(); };
+    el.appendChild(b);
+  }
+}
+function buildAllChips(){
+  chipRow('lookChips', LOOKS, settings.look, k=>{
+    settings={look:k, ...JSON.parse(JSON.stringify(LOOKS[k].set))};
+  }, reco?.look);
+  chipRow('skinChips', SKIN_FINISHES, settings.skinFinish, k=>{ settings.skinFinish=k; }, reco?.set.skinFinish);
+  chipRow('shadowChips', SHADOWS, settings.shadow, k=>{ settings.shadow=k; }, reco?.set.shadow);
+  chipRow('linerChips', LINERS, settings.liner, k=>{ settings.liner=k; }, reco?.set.liner);
+  chipRow('lipStyleChips', LIP_STYLES, settings.lipStyle, k=>{ settings.lipStyle=k; }, reco?.set.lipStyle);
+  chipRow('browChips', BROWS, settings.brow, k=>{ settings.brow=k; }, reco?.set.brow);
+  // Swatches de labios
+  const sw=$('lipSwatches'); sw.innerHTML='';
+  for(const c of LIP_COLORS){
+    const b=document.createElement('button');
+    b.className='swatch'+(c.hex===settings.lipColor?' active':'')+(analysis&&c.tone===analysis.undertone?' suggested':'');
+    b.style.background=c.hex;
+    b.title=c.name; b.setAttribute('aria-label',c.name);
+    b.onclick=()=>{ settings.lipColor=c.hex; buildAllChips(); render(); };
+    sw.appendChild(b);
+  }
+}
+// Tabs de zonas
+document.querySelectorAll('.zonetab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.zonetab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.zonebody').forEach(b=>b.hidden = b.dataset.body!==t.dataset.zone);
+  };
+});
+
+// ---------- Render de maquillaje ----------
+function render(){
+  if(!landmarks||!baseImg) return;
+  const S=settings;
+  const kL=$('sLips').value/100, kB=$('sBlush').value/100,
+        kE=$('sEyes').value/100, kG=$('sGlow').value/100;
+  const faceW=dist(P(FACE_L),P(FACE_R));
+
+  ctxA.clearRect(0,0,cvA.width,cvA.height);
+  ctxA.drawImage(baseImg,0,0);
+
+  // --- Rubor (multiply + pigmento) ---
+  const blushDraw=(ctx,alpha)=>{
+    for(const i of [CHEEK_L,CHEEK_R]){
+      const p=P(i), rr=faceW*.16;
+      ctx.fillStyle=radial(ctx,p.x,p.y,rr,S.blush.color,alpha);
+      ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,7); ctx.fill();
+    }
+  };
+  layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${faceW*.045}px)`; blushDraw(ctx,S.blush.alpha*kB); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${faceW*.05}px)`; blushDraw(ctx,S.blush.alpha*kB*.42); });
+
+  // --- Sombra de ojos (sigue la anatomía real del párpado) ---
+  // En vez de elipses fijas, la sombra se construye sobre la propia línea de
+  // pestañas desplazada hacia la ceja: así se adapta a la forma del ojo y al
+  // ángulo de la cara, y se difumina hasta desaparecer en el borde superior.
+  const SH=SHADOWS[S.shadow];
+  if(SH.color){
+    const ojos=[{LID:LID_L, BROW:BROW_L, E:EYE_L}, {LID:LID_R, BROW:BROW_R, E:EYE_R}];
+    for(const {LID,BROW,E} of ojos){
+      const inn=P(E.inner), out=P(E.outer);
+      const eyeW=dist(inn,out);
+      const eyeC={x:(inn.x+out.x)/2, y:(inn.y+out.y)/2};
+      // dirección "hacia la ceja" calculada del rostro real, no asumida
+      let bx=0,by=0; for(const i of BROW){ const q=P(i); bx+=q.x; by+=q.y; }
+      bx/=BROW.length; by/=BROW.length;
+      let ux=bx-eyeC.x, uy=by-eyeC.y;
+      const ul=Math.hypot(ux,uy)||1; ux/=ul; uy/=ul;
+      const hMax=Math.min(ul*.62, eyeW*.42);      // altura de la sombra
+      const outward=(out.x-inn.x)>0?1:-1;
+
+      // banda que va de la línea de pestañas hacia la cuenca, en 3 pasadas que
+      // se hacen más tenues y más difusas conforme suben (difuminado real)
+      const capas=[{h:.42,a:1.00,b:.016},{h:.72,a:.62,b:.024},{h:1.0,a:.32,b:.034}];
+      for(const c of capas){
+        layer(ctx=>{
+          ctx.globalCompositeOperation='multiply';
+          ctx.filter=`blur(${faceW*c.b}px)`;
+          ctx.fillStyle=hexA(SH.color, SH.alpha*c.a*kE);
+          ctx.beginPath();
+          // borde inferior: la línea de pestañas
+          LID.forEach((idx,i)=>{ const q=P(idx); i===0?ctx.moveTo(q.x,q.y):ctx.lineTo(q.x,q.y); });
+          // borde superior: la misma línea empujada hacia la ceja, con más
+          // altura hacia el exterior (así la sombra sube en la cola del ojo)
+          for(let i=LID.length-1;i>=0;i--){
+            const q=P(LID[i]);
+            const t=i/(LID.length-1);                 // 0 interno → 1 externo
+            const h=hMax*c.h*(0.45+0.75*t);
+            ctx.lineTo(q.x+ux*h, q.y+uy*h);
+          }
+          ctx.closePath(); ctx.fill();
+        });
+      }
+
+      // prolongación externa: pequeña difuminación hacia afuera y abajo
+      layer(ctx=>{
+        ctx.globalCompositeOperation='multiply';
+        ctx.filter=`blur(${faceW*.022}px)`;
+        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
+        const ox=out.x+outward*eyeW*.10, oy=out.y+faceW*.004;
+        ctx.save(); ctx.translate(ox,oy); ctx.rotate(ang);
+        ctx.fillStyle=hexA(SH.color, SH.alpha*.85*kE);
+        ctx.beginPath(); ctx.ellipse(0,0, eyeW*.22, faceW*.024, 0,0,7); ctx.fill();
+        ctx.restore();
+      });
+
+      // eco bajo el párpado inferior, solo en el tercio externo
+      layer(ctx=>{
+        ctx.globalCompositeOperation='multiply';
+        ctx.filter=`blur(${faceW*.014}px)`;
+        const bot=P(E.bottom);
+        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
+        const bxp=bot.x+(out.x-inn.x)*.20, byp=bot.y-uy*faceW*.006;
+        ctx.save(); ctx.translate(bxp,byp); ctx.rotate(ang);
+        const g=ctx.createLinearGradient(0,-faceW*.006,0,faceW*.014);
+        g.addColorStop(0, hexA(SH.color, SH.alpha*.70*kE));
+        g.addColorStop(1, hexA(SH.color, 0));
+        ctx.fillStyle=g;
+        ctx.beginPath(); ctx.ellipse(0,0, eyeW*.34, faceW*.012, 0,0,7); ctx.fill();
+        ctx.restore();
+      });
+
+      // satinado en el centro del párpado móvil, contenido dentro del ojo
+      layer(ctx=>{
+        ctx.globalCompositeOperation='soft-light';
+        ctx.filter=`blur(${faceW*.012}px)`;
+        const sx=eyeC.x+ux*hMax*.30, sy=eyeC.y+uy*hMax*.30;
+        ctx.fillStyle=radial(ctx,sx,sy,eyeW*.24,'#FFF6EC', .40*kE);
+        ctx.beginPath(); ctx.arc(sx,sy,eyeW*.24,0,7); ctx.fill();
+      });
+    }
+  }
+
+  // --- Delineado (adaptativo según la apertura del ojo) ---
+  // Referencia coreana: línea nítida pegada a las pestañas, casi invisible en el
+  // lagrimal y con cuerpo hacia la cola, más una extensión recta y corta.
+  if(S.liner!=='none'){
+    const agrandar = S.liner==='idol' && analysis && analysis.linerMode==='agrandar';
+    const wingAng  = S.liner==='classic'? -0.24 : S.liner==='idol'? -0.10 : 0.12;
+    const wingLen  = faceW*(S.liner==='classic'?.040 : S.liner==='idol'? (agrandar?.036:.026) : .032);
+    const thick    = S.liner==='idol'? (agrandar?.0072:.0056) : .0078;
+
+    layer(ctx=>{
+      ctx.globalCompositeOperation='multiply';
+      ctx.filter=`blur(${Math.max(.8, faceW*.0018)}px)`;
+      ctx.strokeStyle=hexA('#3E2C24', .72*kE);
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      for(const LID of [LID_L,LID_R]){
+        for(let i=0;i<LID.length-1;i++){
+          const a=P(LID[i]), b=P(LID[i+1]);
+          const t=i/(LID.length-2);
+          ctx.lineWidth=Math.max(1.2, faceW*thick*(0.40+1.00*t));
+          ctx.globalAlpha=0.45+0.55*t;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y-faceW*.0018);
+          ctx.lineTo(b.x, b.y-faceW*.0018);
+          ctx.stroke();
+        }
+        ctx.globalAlpha=1;
+        // extensión externa: recta, corta, en la dirección del ojo
+        const inn=P(LID[0]), out=P(LID[LID.length-1]);
+        let dx=out.x-inn.x, dy=out.y-inn.y;
+        const len=Math.hypot(dx,dy); dx/=len; dy/=len;
+        const ca=Math.cos(wingAng), sa=Math.sin(wingAng);
+        const wx=dx*ca - dy*sa, wy=dx*sa + dy*ca;
+        // se afina hacia la punta
+        const seg=4;
+        for(let i=0;i<seg;i++){
+          const t0=i/seg, t1=(i+1)/seg;
+          ctx.lineWidth=Math.max(.6, faceW*thick*(1-t0*.85));
+          ctx.beginPath();
+          ctx.moveTo(out.x+wx*wingLen*t0, out.y-faceW*.0018+wy*wingLen*t0);
+          ctx.lineTo(out.x+wx*wingLen*t1, out.y-faceW*.0018+wy*wingLen*t1);
+          ctx.stroke();
+        }
+      }
+    });
+
+    // Pestañas: densidad sutil sobre la línea superior (da definición sin dibujar pelos)
+    layer(ctx=>{
+      ctx.globalCompositeOperation='multiply';
+      ctx.filter=`blur(${faceW*.006}px)`;
+      for(const E of [EYE_L,EYE_R]){
+        const top=P(E.top), inn=P(E.inner), out=P(E.outer);
+        const eyeW=dist(inn,out);
+        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
+        const cx=(inn.x+out.x)/2+(out.x-inn.x)*.10;
+        ctx.save(); ctx.translate(cx, top.y-faceW*.004); ctx.rotate(ang);
+        ctx.fillStyle=hexA('#3E2C24', .20*kE);
+        ctx.beginPath(); ctx.ellipse(0,0, eyeW*.42, faceW*.006, 0,0,7); ctx.fill();
+        ctx.restore();
+      }
+    });
+
+    // Línea inferior externa (tightline suave): presente en las referencias
+    layer(ctx=>{
+      ctx.globalCompositeOperation='multiply';
+      ctx.filter=`blur(${faceW*.007}px)`;
+      ctx.strokeStyle=hexA('#4A342B', .42*kE);
+      ctx.lineCap='round';
+      ctx.lineWidth=Math.max(1, faceW*.005);
+      for(const E of [EYE_L,EYE_R]){
+        const bot=P(E.bottom), inn=P(E.inner), out=P(E.outer);
+        const ox=(out.x-inn.x);
+        ctx.beginPath();
+        ctx.moveTo(bot.x+ox*.05, bot.y+faceW*.003);
+        ctx.quadraticCurveTo(bot.x+ox*.30, bot.y+faceW*.004, out.x, out.y+faceW*.002);
+        ctx.stroke();
+      }
+    });
+
+    // Luz en el lagrimal: abre la mirada, presente en casi toda referencia coreana
+    layer(ctx=>{
+      ctx.globalCompositeOperation='soft-light';
+      ctx.filter=`blur(${faceW*.011}px)`;
+      ctx.fillStyle=hexA('#FFF8F2', (agrandar?.30:.22)*kE);
+      for(const E of [EYE_L,EYE_R]){
+        const p=P(E.inner);
+        ctx.beginPath(); ctx.arc(p.x,p.y, faceW*.018, 0,7); ctx.fill();
+      }
+    });
+
+    // Efecto de ojo agrandado: profundidad extra bajo el tercio externo inferior
+    if(agrandar){
+      layer(ctx=>{
+        ctx.globalCompositeOperation='multiply';
+        ctx.filter=`blur(${faceW*.015}px)`;
+        ctx.fillStyle=hexA('#8A6A60', .24*kE);
+        for(const E of [EYE_L,EYE_R]){
+          const b=P(E.bottom), inn=P(E.inner), out=P(E.outer);
+          const cx=b.x+(out.x-inn.x)*.24, cy=b.y+faceW*.011;
+          ctx.beginPath(); ctx.ellipse(cx,cy, dist(inn,out)*.36, faceW*.012, 0,0,7); ctx.fill();
+        }
+      });
+    }
+  }
+
+  // --- Cejas ---
+  const BR=BROWS[S.brow];
+  if(BR.color){
+    layer(ctx=>{
+      ctx.globalCompositeOperation='multiply';
+      ctx.filter=`blur(${faceW*.012}px)`;
+      ctx.fillStyle=hexA(BR.color, BR.alpha*kE);
+      for(const BROW of [BROW_L,BROW_R]){
+        ctx.beginPath(); pathPoly(ctx,BROW); ctx.fill();
+      }
+    });
+  }
+
+  // --- Labios ---
+  const LS=LIP_STYLES[S.lipStyle];
+  const lipAlphaBase=.55*LS.mult;
+  const lipDraw=(ctx,a)=>{
+    const mTop=P(13),mBot=P(14);
+    const cx=(mTop.x+mBot.x)/2, cy=(mTop.y+mBot.y)/2;
+    const mouthW=dist(P(61),P(291));
+    const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,mouthW*.62);
+    grad.addColorStop(0,hexA(S.lipColor,a));
+    grad.addColorStop(1,hexA(S.lipColor,a*(1-LS.grad)));
+    ctx.fillStyle=grad;
+    ctx.beginPath(); pathPoly(ctx,LIPS_OUTER); pathPoly(ctx,LIPS_INNER);
+    ctx.fill('evenodd');
+  };
+  layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${Math.max(1.5,faceW*.006)}px)`; lipDraw(ctx,lipAlphaBase*kL); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.32); });
+  // brillo central del labio: el acabado jugoso de los tintes coreanos
+  layer(ctx=>{
+    ctx.globalCompositeOperation='soft-light';
+    ctx.filter=`blur(${faceW*.010}px)`;
+    const mTop=P(13), mBot=P(14), lo=P(17);
+    const mouthW=dist(P(61),P(291));
+    ctx.fillStyle=hexA('#FFFFFF', .34*kL);
+    ctx.beginPath(); ctx.ellipse(mTop.x, (mTop.y+P(0).y)/2, mouthW*.20, faceW*.011, 0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(mBot.x, (mBot.y+lo.y)/2, mouthW*.24, faceW*.013, 0,0,7); ctx.fill();
+  });
+
+  // --- Aegyo sal ---
+  const aegyo= (S.aegyo!==undefined? S.aegyo : .16);
+  layer(ctx=>{
+    ctx.globalCompositeOperation='soft-light';
+    ctx.filter=`blur(${faceW*.02}px)`;
+    for(const E of [EYE_L,EYE_R]){
+      const b=P(E.bottom), inn=P(E.inner), out=P(E.outer);
+      const cx=(inn.x+out.x)/2, cy=b.y+faceW*.022;
+      ctx.fillStyle=hexA('#FFF8F2', aegyo*.8*kG);
+      ctx.beginPath(); ctx.ellipse(cx,cy,dist(inn,out)*.42,faceW*.018,0,0,7); ctx.fill();
+    }
+  });
+
+  // --- Glow según acabado de piel ---
+  // Sin trazos duros: el brillo se construye con manchas radiales difusas que
+  // se desvanecen por completo en los bordes, como la luz sobre la piel.
+  const glow=SKIN_FINISHES[S.skinFinish].glow;
+  if(glow>0){
+    const glowDraw=(ctx,a)=>{
+      const nt=P(NOSE_TOP), np=P(NOSE_TIP);
+      // puente de nariz: cadena de manchas que se afinan, nunca una línea
+      const pasos=6;
+      for(let i=0;i<=pasos;i++){
+        const t=i/pasos;
+        const x=nt.x+(np.x-nt.x)*t, y=nt.y+(np.y-nt.y)*t;
+        const rr=faceW*(.030 - .012*Math.abs(t-.45)*2);   // más ancho al medio
+        const fade=Math.sin(Math.PI*t);                    // se apaga en los extremos
+        ctx.fillStyle=radial(ctx,x,y,rr,'#FFFFFF', a*.55*fade);
+        ctx.beginPath(); ctx.arc(x,y,rr,0,7); ctx.fill();
+      }
+      const spots=[
+        [P(CHEEKBONE_L), faceW*.11, 1],
+        [P(CHEEKBONE_R), faceW*.11, 1],
+        [P(FOREHEAD),    faceW*.14, .55],
+        [P(NOSE_TIP),    faceW*.045,.55],
+        [P(CHIN),        faceW*.07, .6],
+        [P(LIP_TOP),     faceW*.030,.7],
+      ];
+      for(const [p,rr,w] of spots){
+        ctx.fillStyle=radial(ctx,p.x,p.y,rr,'#FFFFFF', a*w);
+        ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,7); ctx.fill();
+      }
+    };
+    layer(ctx=>{ ctx.globalCompositeOperation='soft-light'; ctx.filter=`blur(${faceW*.055}px)`; glowDraw(ctx,glow*kG); });
+    layer(ctx=>{ ctx.globalCompositeOperation='screen';     ctx.filter=`blur(${faceW*.075}px)`; glowDraw(ctx,glow*kG*.14); });
+  }
+}
+function layer(fn){ ctxA.save(); fn(ctxA); ctxA.restore(); }
+
+// ---------- Productos ----------
+// Tiendas adicionales mostradas en el desplegable "+ tiendas" de cada producto.
+// Agrega aquí las demás tiendas locales (Top Beauty, Minna, New Seoul...) con
+// sus URLs, y reemplaza por links directos al producto cuando los tengas.
+const EXTRA_STORES=[
+  {n:'Mia Beauty Bar · Perú', u:'https://miabeautybar.pe/'},
+  {n:'K-Beauty Corner · Perú', u:'https://www.kbeautycorner.com/'},
+  {n:'Stylevana · Internacional', u:'https://www.stylevana.com/'},
+  {n:'Olive Young Global · Internacional', u:'https://global.oliveyoung.com/'},
+];
+function renderProducts(){
+  const und=analysis?analysis.undertone:'neutral';
+  const undTxt=analysis?analysis.undertoneTxt:'neutro';
+  $('products').innerHTML=PRODUCTS.filter(p=>p.cond(settings)).map((p,i)=>`
+    <div class="prod">
+      <div class="cat">${p.cat}</div>
+      <div class="name">${p.name}</div>
+      ${p.tones?`<div class="tone">Para tu subtono ${undTxt}: ${p.tones[und]}</div>`:''}
+      <div class="links">
+        <a class="pe" target="_blank" rel="noopener" href="${p.pe}${AFF}">Asian Shop · Perú</a>
+        <a class="intl" target="_blank" rel="noopener" href="${p.intl}${AFF}">YesStyle · Internacional</a>
+      </div>
+      <button class="morebtn" data-more="${i}" aria-expanded="false">+ ${EXTRA_STORES.length} tiendas más</button>
+      <div class="morestores" id="more-${i}">
+        ${EXTRA_STORES.map(s=>`<a target="_blank" rel="noopener" href="${s.u}">${s.n}</a>`).join('')}
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('.morebtn').forEach(b=>{
+    b.onclick=()=>{
+      const box=$('more-'+b.dataset.more);
+      const open=box.classList.toggle('open');
+      b.setAttribute('aria-expanded',open);
+      b.textContent= open?'− Ocultar tiendas':`+ ${EXTRA_STORES.length} tiendas más`;
+    };
+  });
+}
+
+// ---------- Sliders ----------
+for(const id of ['sLips','sBlush','sEyes','sGlow']){
+  $(id).oninput=e=>{ e.target.nextElementSibling.value=e.target.value+'%'; render(); };
+}
+
+// ---------- Comparador ----------
+const divider=$('divider');
+function setSplit(pct){
+  pct=Math.max(2,Math.min(98,pct));
+  cvA.style.clipPath=`inset(0 0 0 ${pct}%)`;
+  divider.style.left=pct+'%';
+}
+function dragMove(clientX){
+  const r=compare.getBoundingClientRect();
+  setSplit((clientX-r.left)/r.width*100);
+}
+let dragging=false;
+compare.addEventListener('pointerdown',e=>{dragging=true; dragMove(e.clientX);});
+window.addEventListener('pointermove',e=>{if(dragging) dragMove(e.clientX);});
+window.addEventListener('pointerup',()=>dragging=false);
+
+// ---------- Acciones ----------
+$('btnDownload').onclick=()=>{
+  const a=document.createElement('a');
+  a.download='aurak-makeup.png';
+  a.href=cvA.toDataURL('image/png');
+  a.click();
+};
+$('btnReset').onclick=()=>{ resetToDrop(); compare.style.display='none'; controls.style.display='none'; };
+
+function resetToDrop(){ dropzone.style.display='block'; fileInput.value=''; }
+function showError(msg){ errBox.textContent=msg; errBox.style.display='block'; }
+function hideError(){ errBox.style.display='none'; }
+</script>
+</body>
+</html>
