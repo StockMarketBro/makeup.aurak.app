@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AURA-K · Makeup Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Julius+Sans+One&family=Questrial&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
+<style>
+  :root{
+    --lavanda:#B9A7E0; --lavanda-deep:#7C6BA8; --crema:#FBF8F4;
+    --ink:#2E2839; --rosa:#E8A5B3; --card:#FFFFFF;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Questrial', system-ui, sans-serif; background:var(--crema);
+    color:var(--ink); min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  }
+  header{
+    width:100%; padding:26px 20px 18px; text-align:center;
+    background:linear-gradient(180deg, var(--lavanda) 0%, #CBBDEA 100%);
+  }
+  .wordmark{
+    font-family:'Julius Sans One', sans-serif; font-size:26px; letter-spacing:.55em;
+    color:#fff; text-indent:.55em;
+  }
+  .wordmark .spark{letter-spacing:0; text-indent:0; font-size:14px; vertical-align:top;}
+  .sub{
+    font-size:11px; letter-spacing:.35em; color:#fff; opacity:.85; margin-top:6px; text-indent:.35em;
+  }
+  main{width:100%; max-width:520px; padding:18px 16px 40px;}
+
+  /* ---- zona de foto ---- */
+  .stage{
+    background:var(--card); border-radius:22px; overflow:hidden;
+    box-shadow:0 8px 30px rgba(124,107,168,.14); position:relative;
+  }
+  .dropzone{
+    padding:48px 24px; text-align:center; cursor:pointer;
+  }
+  .dropzone .icon{font-size:34px; color:var(--lavanda-deep);}
+  .dropzone p{margin-top:12px; font-size:15px; line-height:1.5;}
+  .dropzone small{display:block; margin-top:8px; color:#8b839c; font-size:12px;}
+  .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  .btn{
+    border:none; border-radius:999px; padding:12px 22px; font-family:inherit;
+    font-size:14px; cursor:pointer; letter-spacing:.02em;
+  }
+  .btn.primary{background:var(--lavanda-deep); color:#fff;}
+  .btn.ghost{background:#EFEAF9; color:var(--lavanda-deep);}
+  .btn:active{transform:scale(.97);}
+  .btn:focus-visible{outline:3px solid var(--rosa); outline-offset:2px;}
+
+  /* comparador antes/después */
+  .compare{position:relative; width:100%; display:none; touch-action:none;}
+  .compare canvas{display:block; width:100%; height:auto;}
+  #canvasAfter{position:absolute; inset:0; clip-path:inset(0 0 0 50%);}
+  .divider{
+    position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff;
+    box-shadow:0 0 8px rgba(0,0,0,.35); cursor:ew-resize;
+  }
+  .divider::after{
+    content:'‹ ›'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#fff; color:var(--lavanda-deep); border-radius:999px; width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:bold;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .taglabel{
+    position:absolute; top:10px; font-size:10px; letter-spacing:.18em;
+    background:rgba(46,40,57,.55); color:#fff; padding:4px 10px; border-radius:999px;
+  }
+  .taglabel.antes{left:10px;} .taglabel.despues{right:10px;}
+
+  video{width:100%; display:none;}
+
+  .loading{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap:12px; background:rgba(251,248,244,.88); z-index:5;
+  }
+  .sparkle{font-size:30px; color:var(--lavanda-deep); animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.3; transform:scale(.9);}50%{opacity:1; transform:scale(1.1);}}
+  @media (prefers-reduced-motion: reduce){ .sparkle{animation:none;} }
+  .loading p{font-size:13px; letter-spacing:.1em; color:var(--lavanda-deep);}
+
+  /* ---- estilos (chips) ---- */
+  .section-label{
+    font-family:'Julius Sans One', sans-serif; font-size:12px; letter-spacing:.3em;
+    color:var(--lavanda-deep); margin:22px 4px 10px;
+  }
+  .chips{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 8px; scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto; border:1.5px solid #E3DCF3; background:#fff; border-radius:16px;
+    padding:10px 14px; font-family:inherit; font-size:13px; cursor:pointer; color:var(--ink);
+    display:flex; flex-direction:column; align-items:center; gap:6px; min-width:92px;
+  }
+  .chip .dot{width:22px; height:22px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.15);}
+  .chip.active{border-color:var(--lavanda-deep); background:#F3EFFB;}
+  .chip:focus-visible{outline:3px solid var(--rosa); outline-offset:2px;}
+
+  /* ---- sliders ---- */
+  .panel{background:var(--card); border-radius:18px; padding:16px; box-shadow:0 4px 18px rgba(124,107,168,.10); margin-top:6px;}
+  .slider-row{display:flex; align-items:center; gap:12px; margin:12px 0;}
+  .slider-row label{width:64px; font-size:13px;}
+  .slider-row input[type=range]{flex:1; accent-color:var(--lavanda-deep);}
+  .slider-row output{width:40px; text-align:right; font-size:12px; color:#8b839c;}
+
+  .actions{display:flex; gap:10px; margin-top:16px;}
+  .actions .btn{flex:1;}
+  .note{
+    margin-top:14px; font-size:12px; color:#8b839c; text-align:center; line-height:1.5;
+  }
+  .error{
+    display:none; margin-top:12px; background:#FDEDEF; color:#A94456; border-radius:12px;
+    padding:12px 14px; font-size:13px; line-height:1.5;
+  }
+  #controls{display:none;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wordmark">AURA-K <span class="spark">✦</span></div>
+  <div class="sub">MAKEUP STUDIO</div>
+</header>
+
+<main>
+  <div class="stage">
+    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Subir una foto">
+      <div class="icon">✦</div>
+      <p>Sube una selfie sin maquillaje<br>o tómala con tu cámara</p>
+      <div class="btnrow">
+        <button class="btn primary" id="btnUpload">Subir foto</button>
+        <button class="btn ghost" id="btnCamera">Usar cámara</button>
+      </div>
+      <small>Tu foto se procesa solo en tu dispositivo. No se envía a ningún servidor.</small>
+    </div>
+
+    <video id="video" playsinline autoplay muted></video>
+    <div class="btnrow" id="captureRow" style="display:none; padding-bottom:18px;">
+      <button class="btn primary" id="btnCapture">Capturar</button>
+      <button class="btn ghost" id="btnCancelCam">Cancelar</button>
+    </div>
+
+    <div class="compare" id="compare">
+      <canvas id="canvasBefore"></canvas>
+      <canvas id="canvasAfter"></canvas>
+      <div class="divider" id="divider"></div>
+      <span class="taglabel antes">ANTES</span>
+      <span class="taglabel despues">DESPUÉS</span>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="sparkle">✦</div>
+      <p>Analizando tu rostro…</p>
+    </div>
+  </div>
+
+  <div class="error" id="error"></div>
+
+  <div id="controls">
+    <div class="section-label">ESTILOS COREANOS</div>
+    <div class="chips" id="chips"></div>
+
+    <div class="section-label">INTENSIDAD</div>
+    <div class="panel">
+      <div class="slider-row">
+        <label for="sLips">Labios</label>
+        <input type="range" id="sLips" min="0" max="150" value="100">
+        <output for="sLips">100%</output>
+      </div>
+      <div class="slider-row">
+        <label for="sBlush">Rubor</label>
+        <input type="range" id="sBlush" min="0" max="150" value="100">
+        <output for="sBlush">100%</output>
+      </div>
+      <div class="slider-row">
+        <label for="sGlow">Brillo</label>
+        <input type="range" id="sGlow" min="0" max="150" value="100">
+        <output for="sGlow">100%</output>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="btnReset">Otra foto</button>
+        <button class="btn primary" id="btnDownload">Descargar look</button>
+      </div>
+    </div>
+
+    <p class="note">El maquillaje se aplica como capas de color translúcidas sobre tu foto original.<br>
+    Tu rostro y tu piel no se modifican ni se regeneran.</p>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" hidden>
+</main>
+
+<script>
+/* ================= AURA-K Makeup Studio =================
+   Motor: MediaPipe FaceMesh (468 puntos) — gratis, local.
+   El maquillaje se pinta con modos de mezcla (multiply /
+   soft-light) sobre la foto: la textura de la piel se
+   conserva y el rostro nunca se altera.
+========================================================= */
+
+// ---------- Índices de landmarks (FaceMesh) ----------
+const LIPS_OUTER = [61,185,40,39,37,0,267,269,270,409,291,375,321,405,314,17,84,181,91,146];
+const LIPS_INNER = [78,191,80,81,82,13,312,311,310,415,308,324,318,402,317,14,87,178,88,95];
+const EYE_L = {top:159, bottom:145, inner:133, outer:33};
+const EYE_R = {top:386, bottom:374, inner:362, outer:263};
+const CHEEK_L = 50, CHEEK_R = 280;
+const CHEEKBONE_L = 117, CHEEKBONE_R = 346;
+const NOSE_TOP = 168, NOSE_TIP = 4;
+const FOREHEAD = 10, CHIN = 152, LIP_TOP = 0;
+const FACE_L = 234, FACE_R = 454;
+
+// ---------- Estilos coreanos ----------
+const STYLES = {
+  natural: {
+    name:'Natural diario', dot:'#C4707A',
+    lips:{color:'#C4707A', alpha:.32, gradient:.35},
+    blush:{color:'#EFA6A0', alpha:.16},
+    shadow:{color:'#D8A08C', alpha:.10},
+    glow:.18, aegyo:.10
+  },
+  gradient: {
+    name:'Gradient lips', dot:'#D64550',
+    lips:{color:'#D64550', alpha:.45, gradient:1},
+    blush:{color:'#F0B2AC', alpha:.10},
+    shadow:{color:'#D8A08C', alpha:.06},
+    glow:.14, aegyo:.08
+  },
+  glass: {
+    name:'Glass skin', dot:'#F3D8DF',
+    lips:{color:'#D98A94', alpha:.20, gradient:.3},
+    blush:{color:'#F2BEBE', alpha:.10},
+    shadow:{color:'#E4C1B0', alpha:.05},
+    glow:.42, aegyo:.14
+  },
+  peach: {
+    name:'Peach coreano', dot:'#F2A57C',
+    lips:{color:'#E58963', alpha:.36, gradient:.45},
+    blush:{color:'#F2A57C', alpha:.20},
+    shadow:{color:'#E8A87C', alpha:.12},
+    glow:.20, aegyo:.10
+  },
+  douyin: {
+    name:'Douyin', dot:'#B8283C',
+    lips:{color:'#B8283C', alpha:.52, gradient:.75},
+    blush:{color:'#E98395', alpha:.24},
+    shadow:{color:'#C77B84', alpha:.14},
+    glow:.24, aegyo:.22
+  }
+};
+
+// ---------- Estado ----------
+let landmarks = null;      // puntos normalizados
+let baseImg = null;        // ImageBitmap/canvas de la foto
+let currentStyle = 'natural';
+let stream = null;
+const MAXW = 1280;
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const dropzone=$('dropzone'), fileInput=$('fileInput'), video=$('video'),
+      captureRow=$('captureRow'), compare=$('compare'), loading=$('loading'),
+      errBox=$('error'), controls=$('controls'),
+      cvB=$('canvasBefore'), cvA=$('canvasAfter'),
+      ctxB=cvB.getContext('2d'), ctxA=cvA.getContext('2d');
+
+// ---------- FaceMesh ----------
+const faceMesh = new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${f}`});
+faceMesh.setOptions({maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:.5});
+faceMesh.onResults(onResults);
+
+// ---------- Entradas ----------
+$('btnUpload').onclick = e => { e.stopPropagation(); fileInput.click(); };
+dropzone.onclick = () => fileInput.click();
+dropzone.onkeydown = e => { if(e.key==='Enter'||e.key===' ') fileInput.click(); };
+
+fileInput.onchange = async e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const img = new Image();
+  img.onload = () => processImage(img);
+  img.onerror = () => showError('No se pudo leer esa imagen. Prueba con un JPG o PNG.');
+  img.src = URL.createObjectURL(file);
+};
+
+$('btnCamera').onclick = async e => {
+  e.stopPropagation();
+  hideError();
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user', width:{ideal:1280}}});
+    video.srcObject = stream;
+    dropzone.style.display='none';
+    video.style.display='block';
+    captureRow.style.display='flex';
+  }catch(err){
+    showError('No se pudo acceder a la cámara. Revisa los permisos del navegador o sube una foto.');
+  }
+};
+$('btnCancelCam').onclick = () => { stopCam(); resetToDrop(); };
+$('btnCapture').onclick = () => {
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  const cx = c.getContext('2d');
+  cx.translate(c.width,0); cx.scale(-1,1);   // espejo selfie
+  cx.drawImage(video,0,0);
+  stopCam();
+  const img = new Image();
+  img.onload = () => processImage(img);
+  img.src = c.toDataURL('image/png');
+};
+function stopCam(){
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  video.style.display='none'; captureRow.style.display='none';
+}
+
+// ---------- Procesamiento ----------
+async function processImage(img){
+  hideError();
+  loading.style.display='flex';
+  dropzone.style.display='none';
+
+  // reescalar para rendimiento
+  const scale = Math.min(1, MAXW / img.naturalWidth);
+  const w = Math.round(img.naturalWidth*scale), h = Math.round(img.naturalHeight*scale);
+  const c = document.createElement('canvas'); c.width=w; c.height=h;
+  c.getContext('2d').drawImage(img,0,0,w,h);
+  baseImg = c;
+
+  try{
+    await faceMesh.send({image:c});
+  }catch(err){
+    loading.style.display='none';
+    showError('El motor de análisis facial no cargó. Verifica tu conexión a internet y recarga la página.');
+    resetToDrop();
+  }
+}
+
+function onResults(res){
+  loading.style.display='none';
+  if(!res.multiFaceLandmarks || !res.multiFaceLandmarks.length){
+    showError('No se detectó un rostro en la foto. Usa una imagen de frente, con buena luz y sin obstrucciones.');
+    resetToDrop();
+    return;
+  }
+  landmarks = res.multiFaceLandmarks[0];
+  cvB.width = cvA.width = baseImg.width;
+  cvB.height = cvA.height = baseImg.height;
+  ctxB.drawImage(baseImg,0,0);
+  compare.style.display='block';
+  controls.style.display='block';
+  render();
+  compare.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ---------- Utilidades de dibujo ----------
+const P = i => ({x:landmarks[i].x*cvA.width, y:landmarks[i].y*cvA.height});
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+function pathPoly(ctx, idxs){
+  const p0 = P(idxs[0]); ctx.moveTo(p0.x,p0.y);
+  for(let i=1;i<idxs.length;i++){ const p=P(idxs[i]); ctx.lineTo(p.x,p.y); }
+  ctx.closePath();
+}
+function radial(ctx, x,y,r, color, aIn, aOut=0){
+  const g = ctx.createRadialGradient(x,y,0, x,y,r);
+  g.addColorStop(0, hexA(color,aIn));
+  g.addColorStop(1, hexA(color,aOut));
+  return g;
+}
+function hexA(hex, a){
+  const n = parseInt(hex.slice(1),16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;
+}
+
+// ---------- Render de maquillaje ----------
+function render(){
+  if(!landmarks || !baseImg) return;
+  const S = STYLES[currentStyle];
+  const kL = $('sLips').value/100, kB = $('sBlush').value/100, kG = $('sGlow').value/100;
+  const faceW = dist(P(FACE_L), P(FACE_R));
+
+  ctxA.clearRect(0,0,cvA.width,cvA.height);
+  ctxA.drawImage(baseImg,0,0);
+
+  // --- Rubor (multiply) ---
+  layer(ctx=>{
+    ctx.globalCompositeOperation='multiply';
+    ctx.filter=`blur(${faceW*.045}px)`;
+    for(const i of [CHEEK_L, CHEEK_R]){
+      const p=P(i), r=faceW*.16;
+      ctx.fillStyle = radial(ctx,p.x,p.y,r,S.blush.color, S.blush.alpha*kB);
+      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7); ctx.fill();
+    }
+  });
+
+  // --- Sombra de ojos (multiply) ---
+  layer(ctx=>{
+    ctx.globalCompositeOperation='multiply';
+    ctx.filter=`blur(${faceW*.03}px)`;
+    for(const E of [EYE_L, EYE_R]){
+      const top=P(E.top), inn=P(E.inner), out=P(E.outer);
+      const cx=(inn.x+out.x)/2, cy=top.y - faceW*.028;
+      const rx=dist(inn,out)*.62, ry=faceW*.035;
+      const ang=Math.atan2(out.y-inn.y, out.x-inn.x);
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
+      ctx.fillStyle = hexA(S.shadow.color, S.shadow.alpha*kL);
+      ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,7); ctx.fill();
+      ctx.restore();
+    }
+  });
+
+  // --- Labios (multiply, con degradado tipo gradient lips) ---
+  layer(ctx=>{
+    ctx.globalCompositeOperation='multiply';
+    ctx.filter=`blur(${Math.max(1.5, faceW*.006)}px)`;
+    const mTop=P(13), mBot=P(14);
+    const cx=(mTop.x+mBot.x)/2, cy=(mTop.y+mBot.y)/2;
+    const mouthW = dist(P(61), P(291));
+    const a = S.lips.alpha*kL, g = S.lips.gradient;
+    const grad = ctx.createRadialGradient(cx,cy,0, cx,cy, mouthW*.62);
+    grad.addColorStop(0, hexA(S.lips.color, a));
+    grad.addColorStop(1, hexA(S.lips.color, a*(1-g)));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    pathPoly(ctx, LIPS_OUTER);
+    pathPoly(ctx, LIPS_INNER);   // evenodd: no pinta dientes si la boca está abierta
+    ctx.fill('evenodd');
+  });
+
+  // --- Aegyo sal: luz bajo los ojos (soft-light) ---
+  layer(ctx=>{
+    ctx.globalCompositeOperation='soft-light';
+    ctx.filter=`blur(${faceW*.02}px)`;
+    for(const E of [EYE_L, EYE_R]){
+      const b=P(E.bottom), inn=P(E.inner), out=P(E.outer);
+      const cx=(inn.x+out.x)/2, cy=b.y + faceW*.022;
+      ctx.fillStyle = hexA('#FFFFFF', S.aegyo*kG);
+      ctx.beginPath(); ctx.ellipse(cx,cy, dist(inn,out)*.42, faceW*.018, 0, 0, 7); ctx.fill();
+    }
+  });
+
+  // --- Glow / glass skin (soft-light) ---
+  layer(ctx=>{
+    ctx.globalCompositeOperation='soft-light';
+    ctx.filter=`blur(${faceW*.05}px)`;
+    const spots = [
+      [P(CHEEKBONE_L), faceW*.10],
+      [P(CHEEKBONE_R), faceW*.10],
+      [P(FOREHEAD),    faceW*.13],
+      [P(NOSE_TIP),    faceW*.06],
+      [P(CHIN),        faceW*.07],
+      [P(LIP_TOP),     faceW*.035],
+    ];
+    // puente de nariz
+    const nt=P(NOSE_TOP), np=P(NOSE_TIP);
+    ctx.strokeStyle = hexA('#FFFFFF', S.glow*kG*.9);
+    ctx.lineWidth = faceW*.03; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(nt.x,nt.y); ctx.lineTo(np.x,np.y); ctx.stroke();
+    for(const [p,r] of spots){
+      ctx.fillStyle = radial(ctx,p.x,p.y,r,'#FFFFFF', S.glow*kG);
+      ctx.beginPath(); ctx.arc(p.x,p.y,r,0,7); ctx.fill();
+    }
+  });
+}
+
+// dibuja una capa con save/restore
+function layer(fn){ ctxA.save(); fn(ctxA); ctxA.restore(); }
+
+// ---------- Chips de estilos ----------
+const chipsEl = $('chips');
+for(const key in STYLES){
+  const b = document.createElement('button');
+  b.className = 'chip' + (key===currentStyle?' active':'');
+  b.innerHTML = `<span class="dot" style="background:${STYLES[key].dot}"></span>${STYLES[key].name}`;
+  b.onclick = () => {
+    currentStyle = key;
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    b.classList.add('active');
+    render();
+  };
+  chipsEl.appendChild(b);
+}
+
+// ---------- Sliders ----------
+for(const id of ['sLips','sBlush','sGlow']){
+  $(id).oninput = e => {
+    e.target.nextElementSibling.value = e.target.value + '%';
+    render();
+  };
+}
+
+// ---------- Comparador antes/después ----------
+const divider = $('divider');
+function setSplit(pct){
+  pct = Math.max(2, Math.min(98, pct));
+  cvA.style.clipPath = `inset(0 0 0 ${pct}%)`;
+  divider.style.left = pct + '%';
+}
+function dragMove(clientX){
+  const r = compare.getBoundingClientRect();
+  setSplit((clientX - r.left)/r.width*100);
+}
+let dragging=false;
+compare.addEventListener('pointerdown', e=>{ dragging=true; dragMove(e.clientX); });
+window.addEventListener('pointermove', e=>{ if(dragging) dragMove(e.clientX); });
+window.addEventListener('pointerup', ()=> dragging=false);
+
+// ---------- Acciones ----------
+$('btnDownload').onclick = () => {
+  const a = document.createElement('a');
+  a.download = 'aurak-makeup.png';
+  a.href = cvA.toDataURL('image/png');
+  a.click();
+};
+$('btnReset').onclick = () => { resetToDrop(); compare.style.display='none'; controls.style.display='none'; };
+
+// ---------- Helpers UI ----------
+function resetToDrop(){ dropzone.style.display='block'; fileInput.value=''; }
+function showError(msg){ errBox.textContent=msg; errBox.style.display='block'; }
+function hideError(){ errBox.style.display='none'; }
+</script>
+</body>
+</html>
