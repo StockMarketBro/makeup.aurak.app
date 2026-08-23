@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Aura-K · Makeup Studio K-Beauty</title>
+<meta name="description" content="Prueba maquillaje coreano sobre tu propia selfie. Análisis de rostro con IA, look recomendado y productos K-beauty en tiendas de Perú e internacionales.">
+<link rel="canonical" href="https://makeup.aurak.app/">
+<meta property="og:site_name" content="Aura-K">
+<meta property="og:title" content="Aura-K · Makeup Studio">
+<meta property="og:description" content="Prueba maquillaje coreano sobre tu propia selfie, gratis y sin que tu foto salga de tu dispositivo.">
+<meta property="og:url" content="https://makeup.aurak.app/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#9A92CE">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Julius+Sans+One&family=Questrial&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
@@ -29,6 +37,23 @@
   }
   .wordmark .spark{letter-spacing:0; text-indent:0; font-size:15px; vertical-align:top;}
   .sub{font-size:11px; letter-spacing:.32em; color:#fff; opacity:.85; margin-top:6px; text-indent:.32em;}
+  header .home{text-decoration:none; display:block;}
+  .crosslink{
+    display:inline-block; margin-top:14px; text-decoration:none;
+    background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.45);
+    border-radius:999px; padding:8px 16px; font-size:12px; letter-spacing:.04em;
+  }
+  .crosslink:active{background:rgba(255,255,255,.3);}
+  /* pie: vuelta a la landing */
+  .sitefoot{
+    margin-top:26px; padding-top:18px; border-top:1px solid var(--line); text-align:center;
+  }
+  .sitefoot a{
+    display:inline-block; text-decoration:none; color:#5F58A0;
+    font-family:'Julius Sans One', sans-serif; font-size:12px; letter-spacing:.28em;
+    text-indent:.28em;
+  }
+  .sitefoot p{margin-top:8px; font-size:11.5px; color:var(--tinta-media);}
   main{width:100%; max-width:520px; padding:18px 16px 40px;}
 
   /* ---- zona de foto ---- */
@@ -155,6 +180,26 @@
   .actions{display:flex; gap:10px; margin-top:14px;}
   .actions .btn{flex:1;}
 
+  /* barra de acciones: deliberadamente distinta de los controles de maquillaje
+     (cuadrada, con borde e icono) para que no se lea como una opción de look */
+  .actionbar{
+    display:flex; gap:10px; margin-top:16px;
+  }
+  .act{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+    border:1.5px solid #D8D3EC; background:#fff; color:#5F58A0;
+    border-radius:10px; padding:13px 12px; font-family:inherit; font-size:13.5px;
+    cursor:pointer;
+  }
+  .act .ico{
+    font-size:15px; width:22px; height:22px; border-radius:6px;
+    background:var(--lavanda-bruma); display:flex; align-items:center; justify-content:center;
+  }
+  .act.save{background:var(--tinta); border-color:var(--tinta); color:#fff;}
+  .act.save .ico{background:rgba(255,255,255,.18); color:#fff;}
+  .act:active{transform:scale(.98);}
+  .act:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+
   /* productos */
   .prod{
     background:var(--blanco); border-radius:16px; padding:14px;
@@ -205,9 +250,12 @@
 </head>
 <body>
 <header>
-  <div class="eyebrow">K-BEAUTY</div>
-  <div class="wordmark">AURA-K <span class="spark">✦</span></div>
+  <a class="home" href="https://www.aurak.app" aria-label="Ir a Aura-K">
+    <div class="eyebrow">K-BEAUTY</div>
+    <div class="wordmark">AURA-K <span class="spark">✦</span></div>
+  </a>
   <div class="sub">MAKEUP STUDIO</div>
+  <a class="crosslink" href="https://www.aurak.app">Analizar mi piel en Aura-K →</a>
 </header>
 
 <main>
@@ -323,10 +371,15 @@
       <div class="slider-row"><label for="sBlush">Rubor</label><input type="range" id="sBlush" min="0" max="200" value="100"><output>100%</output></div>
       <div class="slider-row"><label for="sEyes">Ojos</label><input type="range" id="sEyes" min="0" max="200" value="100"><output>100%</output></div>
       <div class="slider-row"><label for="sGlow">Brillo</label><input type="range" id="sGlow" min="0" max="200" value="100"><output>100%</output></div>
-      <div class="actions">
-        <button class="btn ghost" id="btnReset">Otra foto</button>
-        <button class="btn primary" id="btnDownload">Descargar look</button>
-      </div>
+    </div>
+
+    <div class="actionbar">
+      <button class="act" id="btnReset">
+        <span class="ico" aria-hidden="true">↺</span><span>Empezar de nuevo</span>
+      </button>
+      <button class="act save" id="btnDownload">
+        <span class="ico" aria-hidden="true">↓</span><span>Guardar mi look</span>
+      </button>
     </div>
 
     <div class="section-label">PRODUCTOS PARA ESTE LOOK</div>
@@ -338,6 +391,12 @@
       ni una recomendación profesional. Los enlaces a tiendas pueden incluir código de referido:
       si compras a través de ellos, Aura-K puede recibir una comisión sin costo adicional para ti.
     </p>
+
+    <div class="sitefoot">
+      <a href="https://www.aurak.app">AURA-K ✦</a>
+      <p>El maquillaje luce mejor sobre una piel cuidada.<br>
+      Descubre tu rutina coreana con el análisis de piel en aurak.app</p>
+    </div>
   </div>
 
   <input type="file" id="fileInput" accept="image/*" hidden>
