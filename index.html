@@ -170,6 +170,20 @@
   }
   .prod .links a.pe{background:var(--lavanda-bruma); color:#5F58A0;}
   .prod .links a.intl{background:var(--lavanda); color:#fff;}
+  .morebtn{
+    display:block; width:100%; margin-top:8px; border:none; background:transparent;
+    color:var(--tinta-media); font-family:inherit; font-size:12px; cursor:pointer; padding:6px;
+    letter-spacing:.04em;
+  }
+  .morestores{display:none; margin-top:6px; border-top:1px solid var(--line); padding-top:8px;}
+  .morestores.open{display:block;}
+  .morestores a{
+    display:flex; justify-content:space-between; align-items:center;
+    text-decoration:none; color:#5F58A0; font-size:12.5px; padding:8px 6px;
+    border-radius:10px;
+  }
+  .morestores a:active{background:var(--lavanda-bruma);}
+  .morestores a::after{content:'→'; color:var(--lavanda);}
 
   .note{margin-top:16px; font-size:11.5px; color:var(--tinta-media); text-align:center; line-height:1.55;}
   .error{
@@ -345,6 +359,7 @@ const FACE_L=234, FACE_R=454, JAW_L=172, JAW_R=397;
 
 // ---------- Opciones por zona ----------
 const LOOKS={
+  idol:{name:'Idol K-pop ✦', dot:'#C63A55', set:{lipStyle:'gradient', lipColor:'#C63A55', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EE8AA0',alpha:.42}, glow:.55, aegyo:.32}},
   natural:{name:'Natural diario', dot:'#C4707A', set:{lipStyle:'mlbb', lipColor:'#C4707A', skinFinish:'dewy', shadow:'durazno', liner:'none', brow:'castano', blush:{color:'#EFA6A0',alpha:.30}, glow:.28, aegyo:.16}},
   gradient:{name:'Gradient lips', dot:'#D64550', set:{lipStyle:'gradient', lipColor:'#D64550', skinFinish:'dewy', shadow:'durazno', liner:'puppy', brow:'castano', blush:{color:'#F0B2AC',alpha:.20}, glow:.24, aegyo:.12}},
   glass:{name:'Glass skin', dot:'#F3D8DF', set:{lipStyle:'mlbb', lipColor:'#D98A94', skinFinish:'glass', shadow:'none', liner:'none', brow:'gris', blush:{color:'#F2BEBE',alpha:.20}, glow:.60, aegyo:.22}},
@@ -542,9 +557,10 @@ function onResults(res){
   controls.style.display='block';
 
   analysis=analyzeFace();
-  computeReco();          // sugerencia (análisis + quiz)
-  applyReco();            // aplica look sugerido de entrada
+  computeReco();          // el mejor look posible (análisis + quiz)
+  applyReco();            // se aplica de inmediato
   renderAnalysis(); buildAllChips(); renderProducts(); render();
+  setSplit(15);           // el DESPUÉS domina la vista apenas termina el análisis
   compare.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
@@ -614,24 +630,23 @@ function analyzeFace(){
 // ---------- Recomendación (análisis + quiz) ----------
 function computeReco(){
   const A=analysis;
-  // Look base por subtono
-  let look= A.undertone==='warm'?'peach': A.undertone==='cool'?'gradient':'natural';
-  let why=`por tu subtono ${A.undertoneTxt}`;
-  // Ajustes por quiz
-  if(quiz.vibe==='fresco'){ look='glass'; why='para un efecto fresco y luminoso'; }
-  if(quiz.vibe==='elegante'){ look= A.undertone==='warm'?'natural':'gradient'; why='para una elegancia sobria'; }
-  if(quiz.vibe==='atrevido'||quiz.ocasion==='noche'||quiz.ocasion==='evento'){
-    if(quiz.vibe==='atrevido'){ look='douyin'; why='para un look de impacto'; }
-  }
-  if(quiz.ocasion==='trabajo'&&look==='douyin'){ look='gradient'; why='intenso pero apropiado para el trabajo'; }
-  if(A.lips==='finos'&&look!=='douyin'){ look='gradient'; why='el degradado da volumen a labios finos'; }
+  // El mejor look posible: Idol K-pop afinado a tus rasgos
+  let look='idol';
+  let why=`glass skin, gradient lips y mirada definida, adaptado a tu subtono ${A.undertoneTxt}`;
+  // El quiz lo refina
+  if(quiz.ocasion==='trabajo'){ look='gradient'; why='versión pulida del look idol, apropiada para el trabajo'; }
+  if(quiz.vibe==='fresco'){ look='glass'; why='la base luminosa del look idol, en versión fresca'; }
+  if(quiz.vibe==='dulce'){ look='peach'; why='la versión dulce del look idol, en tonos durazno'; }
+  if(quiz.vibe==='atrevido'||quiz.ocasion==='noche'||quiz.ocasion==='evento'){ look='idol'; why='look idol completo, de escenario'; }
+  if(quiz.intensidad==='sutil'&&look==='idol'){ look='gradient'; why='look idol en versión sutil'; }
 
   const set=JSON.parse(JSON.stringify(LOOKS[look].set));
   // Color de labios afinado por subtono
-  const recColor=LIP_COLORS.find(c=>c.tone===A.undertone)||LIP_COLORS[3];
-  if(look!=='douyin') set.lipColor=recColor.hex;
-  // Intensidad del quiz
-  const k= quiz.intensidad==='sutil'?70: quiz.intensidad==='marcada'?130:100;
+  const recColor= A.undertone==='warm'?LIP_COLORS[4]: A.undertone==='cool'?LIP_COLORS[1]:LIP_COLORS[0];
+  if(look!=='douyin'&&look!=='idol') set.lipColor=recColor.hex;
+  if(look==='idol') set.lipColor= A.undertone==='warm'?'#D0403A': A.undertone==='cool'?'#B82D4B':'#C63A55';
+  // Intensidad del quiz (por defecto, marcada: que el cambio se note)
+  const k= quiz.intensidad==='sutil'?75: quiz.intensidad==='media'?110:140;
 
   reco={look, set, k, recColor,
     texto:`Te sugerimos <b>${LOOKS[look].name}</b> ${why}, con labios en <b>${recColor.name.toLowerCase()}</b>` +
@@ -733,7 +748,7 @@ function render(){
     }
   };
   layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${faceW*.045}px)`; blushDraw(ctx,S.blush.alpha*kB); });
-  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${faceW*.05}px)`; blushDraw(ctx,S.blush.alpha*kB*.4); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${faceW*.05}px)`; blushDraw(ctx,S.blush.alpha*kB*.5); });
 
   // --- Sombra de ojos ---
   const SH=SHADOWS[S.shadow];
@@ -759,9 +774,9 @@ function render(){
     layer(ctx=>{
       ctx.globalCompositeOperation='multiply';
       ctx.filter='blur(1px)';
-      ctx.strokeStyle=hexA('#33231F', .8*kE);
+      ctx.strokeStyle=hexA('#33231F', .85*kE);
       ctx.lineCap='round'; ctx.lineJoin='round';
-      ctx.lineWidth=Math.max(1.5, faceW*.007);
+      ctx.lineWidth=Math.max(1.8, faceW*.008);
       for(const LID of [LID_L,LID_R]){
         // línea sobre las pestañas superiores
         ctx.beginPath();
@@ -801,7 +816,7 @@ function render(){
 
   // --- Labios ---
   const LS=LIP_STYLES[S.lipStyle];
-  const lipAlphaBase=.50*LS.mult;
+  const lipAlphaBase=.62*LS.mult;
   const lipDraw=(ctx,a)=>{
     const mTop=P(13),mBot=P(14);
     const cx=(mTop.x+mBot.x)/2, cy=(mTop.y+mBot.y)/2;
@@ -814,7 +829,7 @@ function render(){
     ctx.fill('evenodd');
   };
   layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${Math.max(1.5,faceW*.006)}px)`; lipDraw(ctx,lipAlphaBase*kL); });
-  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.35); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.45); });
 
   // --- Aegyo sal ---
   const aegyo= S.look==='douyin'?.32:.16;
@@ -851,10 +866,19 @@ function render(){
 function layer(fn){ ctxA.save(); fn(ctxA); ctxA.restore(); }
 
 // ---------- Productos ----------
+// Tiendas adicionales mostradas en el desplegable "+ tiendas" de cada producto.
+// Agrega aquí las demás tiendas locales (Top Beauty, Minna, New Seoul...) con
+// sus URLs, y reemplaza por links directos al producto cuando los tengas.
+const EXTRA_STORES=[
+  {n:'Mia Beauty Bar · Perú', u:'https://miabeautybar.pe/'},
+  {n:'K-Beauty Corner · Perú', u:'https://www.kbeautycorner.com/'},
+  {n:'Stylevana · Internacional', u:'https://www.stylevana.com/'},
+  {n:'Olive Young Global · Internacional', u:'https://global.oliveyoung.com/'},
+];
 function renderProducts(){
   const und=analysis?analysis.undertone:'neutral';
   const undTxt=analysis?analysis.undertoneTxt:'neutro';
-  $('products').innerHTML=PRODUCTS.filter(p=>p.cond(settings)).map(p=>`
+  $('products').innerHTML=PRODUCTS.filter(p=>p.cond(settings)).map((p,i)=>`
     <div class="prod">
       <div class="cat">${p.cat}</div>
       <div class="name">${p.name}</div>
@@ -863,7 +887,19 @@ function renderProducts(){
         <a class="pe" target="_blank" rel="noopener" href="${p.pe}${AFF}">Asian Shop · Perú</a>
         <a class="intl" target="_blank" rel="noopener" href="${p.intl}${AFF}">YesStyle · Internacional</a>
       </div>
+      <button class="morebtn" data-more="${i}" aria-expanded="false">+ ${EXTRA_STORES.length} tiendas más</button>
+      <div class="morestores" id="more-${i}">
+        ${EXTRA_STORES.map(s=>`<a target="_blank" rel="noopener" href="${s.u}">${s.n}</a>`).join('')}
+      </div>
     </div>`).join('');
+  document.querySelectorAll('.morebtn').forEach(b=>{
+    b.onclick=()=>{
+      const box=$('more-'+b.dataset.more);
+      const open=box.classList.toggle('open');
+      b.setAttribute('aria-expanded',open);
+      b.textContent= open?'− Ocultar tiendas':`+ ${EXTRA_STORES.length} tiendas más`;
+    };
+  });
 }
 
 // ---------- Sliders ----------
