@@ -359,16 +359,16 @@ const FACE_L=234, FACE_R=454, JAW_L=172, JAW_R=397;
 
 // ---------- Opciones por zona ----------
 const LOOKS={
-  idol:{name:'Idol K-pop ✦', dot:'#CC5566', set:{lipStyle:'gradient', lipColor:'#CC5566', skinFinish:'dewy', shadow:'rosa', liner:'idol', brow:'castano', blush:{color:'#EFA0AC',alpha:.26}, glow:.34, aegyo:.20}},
-  natural:{name:'Natural diario', dot:'#C4707A', set:{lipStyle:'mlbb', lipColor:'#C4707A', skinFinish:'dewy', shadow:'durazno', liner:'none', brow:'castano', blush:{color:'#EFA6A0',alpha:.30}, glow:.28, aegyo:.16}},
-  gradient:{name:'Gradient lips', dot:'#D64550', set:{lipStyle:'gradient', lipColor:'#D64550', skinFinish:'dewy', shadow:'durazno', liner:'puppy', brow:'castano', blush:{color:'#F0B2AC',alpha:.20}, glow:.24, aegyo:.12}},
-  glass:{name:'Glass skin', dot:'#F3D8DF', set:{lipStyle:'mlbb', lipColor:'#D98A94', skinFinish:'glass', shadow:'none', liner:'none', brow:'gris', blush:{color:'#F2BEBE',alpha:.20}, glow:.60, aegyo:.22}},
-  peach:{name:'Peach coreano', dot:'#F2A57C', set:{lipStyle:'full', lipColor:'#E58963', skinFinish:'dewy', shadow:'durazno', liner:'puppy', brow:'castano', blush:{color:'#F2A57C',alpha:.36}, glow:.30, aegyo:.16}},
-  douyin:{name:'Douyin', dot:'#B8283C', set:{lipStyle:'gradient', lipColor:'#B8283C', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#E98395',alpha:.42}, glow:.36, aegyo:.32}}
+  clean:{name:'Clean natural', dot:'#C87F82', set:{lipStyle:'mlbb', lipColor:'#C87F82', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFAFA8',alpha:.22}, glow:.26, aegyo:.14}},
+  sobrio:{name:'Sobrio elegante', dot:'#B4707E', set:{lipStyle:'mlbb', lipColor:'#B4707E', skinFinish:'dewy', shadow:'tierra', liner:'idol', brow:'castano', blush:{color:'#E3A79E',alpha:.18}, glow:.22, aegyo:.12}},
+  peach:{name:'Peach coreano', dot:'#DD8B6A', set:{lipStyle:'mlbb', lipColor:'#DD8B6A', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFA981',alpha:.24}, glow:.26, aegyo:.14}},
+  gradient:{name:'Gradient lips', dot:'#C9505C', set:{lipStyle:'gradient', lipColor:'#C9505C', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EDAEA8',alpha:.20}, glow:.24, aegyo:.14}},
+  glass:{name:'Glass skin', dot:'#DCA3A8', set:{lipStyle:'mlbb', lipColor:'#D0919A', skinFinish:'glass', shadow:'rosa', liner:'idol', brow:'gris', blush:{color:'#F0BCB8',alpha:.18}, glow:.46, aegyo:.20}},
+  idol:{name:'Idol K-pop', dot:'#C25563', set:{lipStyle:'gradient', lipColor:'#C25563', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EC97A5',alpha:.30}, glow:.42, aegyo:.24}}
 };
 const SKIN_FINISHES={
-  glass:{name:'Glass skin', dot:'#F6EDF2', glow:.60},
-  dewy:{name:'Dewy natural', dot:'#F2E4DE', glow:.30},
+  glass:{name:'Glass skin', dot:'#F6EDF2', glow:.44},
+  dewy:{name:'Dewy natural', dot:'#F2E4DE', glow:.26},
   matte:{name:'Mate suave', dot:'#E8DDD6', glow:0},
 };
 const SHADOWS={
@@ -395,12 +395,12 @@ const LIP_STYLES={
   mlbb:{name:'MLBB suave', grad:.35, mult:.75},
 };
 const LIP_COLORS=[
-  {hex:'#D64550', name:'Rojo cereza', tone:'neutral'},
-  {hex:'#A2364C', name:'Berry', tone:'cool'},
-  {hex:'#B06A7E', name:'Malva rosa', tone:'cool'},
-  {hex:'#C4707A', name:'Rosa MLBB', tone:'neutral'},
-  {hex:'#E58963', name:'Coral', tone:'warm'},
-  {hex:'#E8916B', name:'Durazno', tone:'warm'},
+  {hex:'#C05A63', name:'Rojo suave', tone:'neutral'},
+  {hex:'#A85A6B', name:'Berry suave', tone:'cool'},
+  {hex:'#B4707E', name:'Malva rosa', tone:'cool'},
+  {hex:'#C87F82', name:'Rosa MLBB', tone:'neutral'},
+  {hex:'#CE7F6B', name:'Coral suave', tone:'warm'},
+  {hex:'#DD8B6A', name:'Durazno', tone:'warm'},
 ];
 
 // ---------- Catálogo con LINKS DIRECTOS (verificados) ----------
@@ -471,7 +471,7 @@ const PRODUCTS=[
 
 // ---------- Estado ----------
 let landmarks=null, baseImg=null, stream=null, analysis=null;
-let settings={look:'natural', ...JSON.parse(JSON.stringify(LOOKS.natural.set))};
+let settings={look:'clean', ...JSON.parse(JSON.stringify(LOOKS.clean.set))};
 let quiz={ocasion:null, intensidad:null, vibe:null};
 let reco=null;
 const MAXW=1280;
@@ -561,7 +561,7 @@ function onResults(res){
   computeReco();          // el mejor look posible (análisis + quiz)
   applyReco();            // se aplica de inmediato
   renderAnalysis(); buildAllChips(); renderProducts(); render();
-  setSplit(25);           // el DESPUÉS domina la vista apenas termina el análisis
+  setSplit(28);           // el DESPUÉS domina la vista apenas termina el análisis
   compare.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
@@ -635,38 +635,81 @@ function analyzeFace(){
 }
 
 // ---------- Recomendación (análisis + quiz) ----------
+// La IA elige el look y calibra la intensidad de CADA zona según los rasgos
+// de la persona. El resultado busca verse natural, sobrio y bien terminado.
 function computeReco(){
   const A=analysis;
-  // El mejor look posible: Idol K-pop afinado a tus rasgos
-  let look='idol';
-  let why=`glass skin, gradient lips y mirada definida, adaptado a tu subtono ${A.undertoneTxt}`;
-  // El quiz lo refina
-  if(quiz.ocasion==='trabajo'){ look='gradient'; why='versión pulida del look idol, apropiada para el trabajo'; }
-  if(quiz.vibe==='fresco'){ look='glass'; why='la base luminosa del look idol, en versión fresca'; }
-  if(quiz.vibe==='dulce'){ look='peach'; why='la versión dulce del look idol, en tonos durazno'; }
-  if(quiz.vibe==='atrevido'||quiz.ocasion==='noche'||quiz.ocasion==='evento'){ look='idol'; why='look idol completo, de escenario'; }
-  if(quiz.intensidad==='sutil'&&look==='idol'){ look='natural'; why='look idol en versión sutil'; }
+
+  // --- Elección de look: por defecto lo natural ---
+  let look='clean';
+  let why='una base luminosa, labios MLBB y una mirada definida sin recargar';
+
+  if(A.undertone==='warm'){ look='peach'; why='los tonos durazno acompañan tu subtono cálido de forma natural'; }
+  else if(A.undertone==='cool'){ look='sobrio'; why='los rosas y malvas suaves favorecen tu subtono frío'; }
+
+  // El quiz refina
+  if(quiz.vibe==='fresco'){ look='glass'; why='piel luminosa y color mínimo, para un efecto fresco'; }
+  if(quiz.vibe==='elegante'){ look='sobrio'; why='color contenido y acabado pulido, para un resultado elegante'; }
+  if(quiz.vibe==='dulce'){ look='peach'; why='tonos durazno y rubor suave, para un aire dulce'; }
+  if(quiz.ocasion==='trabajo'){ look='sobrio'; why='discreto y bien terminado para el día a día laboral'; }
+  if(A.lips==='finos'&&look!=='glass'){ look='gradient'; why='el degradado da volumen a labios finos sin verse cargado'; }
+
+  // El look idol solo si la persona y el contexto realmente lo piden:
+  // rasgos que lo sostienen (ojos definidos o labios llenos) + ocasión de impacto.
+  const sostieneIdol = (A.eyeSize!=='pequeños') || (A.lips==='llenos');
+  if(quiz.vibe==='atrevido' && (quiz.ocasion==='noche'||quiz.ocasion==='evento') && sostieneIdol){
+    look='idol'; why='tus rasgos sostienen un look de escenario y la ocasión lo permite';
+  }
 
   const set=JSON.parse(JSON.stringify(LOOKS[look].set));
-  // Color de labios afinado por subtono
-  const recColor= A.undertone==='warm'?LIP_COLORS[4]: A.undertone==='cool'?LIP_COLORS[1]:LIP_COLORS[0];
-  if(look!=='douyin'&&look!=='idol') set.lipColor=recColor.hex;
-  if(look==='idol') set.lipColor= A.undertone==='warm'?'#D0403A': A.undertone==='cool'?'#B82D4B':'#C63A55';
-  // Intensidad del quiz (por defecto, marcada: que el cambio se note)
-  const k= quiz.intensidad==='sutil'?70: quiz.intensidad==='marcada'?125:100;
+
+  // --- Color de labios afinado al subtono ---
+  const recColor= A.undertone==='warm'?LIP_COLORS[5]: A.undertone==='cool'?LIP_COLORS[2]:LIP_COLORS[3];
+  if(look!=='idol'&&look!=='peach') set.lipColor=recColor.hex;
+
+  // --- Ojos: la app decide si conviene abrir la mirada o solo delinear ---
+  set.liner = A.linerMode==='agrandar' ? 'idol' : (look==='idol'?'classic':'idol');
+  if(A.eyeSize==='grandes'&&look!=='idol') set.shadow= look==='glass'?'none':set.shadow;
+
+  // --- Intensidad calibrada POR ZONA según los rasgos ---
+  // base neutra 100; se ajusta hacia arriba o abajo según lo que le siente mejor.
+  let kL=100, kB=100, kE=100, kG=100;
+
+  // Labios: los llenos necesitan menos producto; los finos, algo más de color.
+  if(A.lips==='llenos') kL-=25; else if(A.lips==='finos') kL+=10;
+  // Piel morena admite (y necesita) algo más de pigmento para que se lea.
+  if(A.depth==='morena'){ kL+=15; kB+=15; }
+  else if(A.depth==='clara'){ kL-=8; kB-=15; kG-=10; }   // en piel clara todo se nota más
+  // Rostro ancho/redondo: el rubor difuso ayuda; el alargado, menos.
+  if(A.shape==='redondo'||A.shape==='cuadrado') kB+=8;
+  else if(A.shape==='alargado') kB-=8;
+  // Ojos: los grandes solo necesitan definición; los pequeños, un poco más de trabajo.
+  if(A.eyeSize==='grandes') kE-=25; else if(A.eyeSize==='pequeños') kE+=12;
+  // El glow se modera en piel clara y sube un punto en piel media/morena.
+  if(A.depth!=='clara') kG+=8;
+
+  // El quiz mueve todo el conjunto sin romper el equilibrio anterior.
+  const mult= quiz.intensidad==='sutil'?.72: quiz.intensidad==='marcada'?1.28:1;
+  const clamp=v=>Math.max(30,Math.min(180,Math.round(v*mult)));
+  const k={lips:clamp(kL), blush:clamp(kB), eyes:clamp(kE), glow:clamp(kG)};
+
+  const ojosTxt = A.linerMode==='agrandar'
+    ? 'delineado ajustado que abre la mirada'
+    : 'delineado limpio, sin recargar tus ojos';
 
   reco={look, set, k, recColor,
-    texto:`Te sugerimos <b>${LOOKS[look].name}</b> ${why}, con labios en <b>${recColor.name.toLowerCase()}</b>` +
-      (quiz.intensidad?` e intensidad <b>${quiz.intensidad}</b>.`:'.') +
-      ` Puedes ajustar cada zona abajo.`};
+    texto:`Te sugerimos <b>${LOOKS[look].name}</b>: ${why}. ` +
+      `Labios en <b>${(look==='idol'||look==='peach'?LOOKS[look].name.toLowerCase():recColor.name.toLowerCase())}</b> ` +
+      `y ${ojosTxt}. Las intensidades ya vienen calibradas a tus rasgos; ajústalas si quieres.`};
   const box=$('recoBox');
   if(box) box.innerHTML=reco.texto;
 }
 function applyReco(){
   settings={look:reco.look, ...JSON.parse(JSON.stringify(reco.set))};
-  for(const id of ['sLips','sBlush','sEyes','sGlow']){
-    $(id).value=reco.k;
-    $(id).nextElementSibling.value=reco.k+'%';
+  const map={sLips:reco.k.lips, sBlush:reco.k.blush, sEyes:reco.k.eyes, sGlow:reco.k.glow};
+  for(const id in map){
+    $(id).value=map[id];
+    $(id).nextElementSibling.value=map[id]+'%';
   }
   buildAllChips(); renderProducts(); render();
 }
@@ -787,7 +830,7 @@ function render(){
     layer(ctx=>{
       ctx.globalCompositeOperation='multiply';
       ctx.filter=`blur(${Math.max(1, faceW*.0025)}px)`;
-      ctx.strokeStyle=hexA('#3B2A24', .62*kE);
+      ctx.strokeStyle=hexA('#4A342B', .58*kE);
       ctx.lineCap='round'; ctx.lineJoin='round';
       for(const LID of [LID_L,LID_R]){
         // línea superior: más gruesa hacia el exterior, casi invisible en el lagrimal
@@ -869,7 +912,17 @@ function render(){
     ctx.fill('evenodd');
   };
   layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${Math.max(1.5,faceW*.006)}px)`; lipDraw(ctx,lipAlphaBase*kL); });
-  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.35); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.32); });
+  // brillo central del labio: el acabado jugoso de los tintes coreanos
+  layer(ctx=>{
+    ctx.globalCompositeOperation='soft-light';
+    ctx.filter=`blur(${faceW*.010}px)`;
+    const mTop=P(13), mBot=P(14), lo=P(17);
+    const mouthW=dist(P(61),P(291));
+    ctx.fillStyle=hexA('#FFFFFF', .34*kL);
+    ctx.beginPath(); ctx.ellipse(mTop.x, (mTop.y+P(0).y)/2, mouthW*.20, faceW*.011, 0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(mBot.x, (mBot.y+lo.y)/2, mouthW*.24, faceW*.013, 0,0,7); ctx.fill();
+  });
 
   // --- Aegyo sal ---
   const aegyo= (S.aegyo!==undefined? S.aegyo : .16);
