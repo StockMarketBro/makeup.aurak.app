@@ -54,7 +54,16 @@
     text-indent:.28em;
   }
   .sitefoot p{margin-top:8px; font-size:11.5px; color:var(--tinta-media);}
-  main{width:100%; max-width:520px; padding:18px 16px 40px;}
+  main{width:100%; max-width:520px; padding:18px 16px 40px; position:relative;}
+
+  /* La foto queda fija arriba mientras se ajusta el maquillaje, para ver los
+     cambios en vivo; se libera al llegar a los productos, donde ya no hace falta. */
+  .stagewrap{position:sticky; top:0; z-index:20; background:var(--fondo); padding-bottom:10px;}
+  .stagewrap.free{position:static;}
+  .stagewrap.stuck .stage{box-shadow:0 10px 22px rgba(124,107,168,.20);}
+  .stagewrap.stuck .compare canvas{max-height:34vh;}
+  @media (max-height:700px){ .stagewrap.stuck .compare canvas{max-height:30vh;} }
+  .stagewrap.stuck .scrollcue{display:none !important;}
 
   /* ---- zona de foto ---- */
   .stage{
@@ -284,6 +293,7 @@
 </header>
 
 <main>
+  <div class="stagewrap" id="stagewrap">
   <div class="stage">
     <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Tomar o subir una foto">
       <div class="icon">✦</div>
@@ -318,6 +328,8 @@
       <p>Observando tu rostro, tono y rasgos…</p>
     </div>
   </div>
+
+  </div><!-- /stagewrap -->
 
   <div class="error" id="error"></div>
 
@@ -411,6 +423,7 @@
       </button>
     </div>
 
+    <div id="unstick"></div>
     <div class="section-label">PRODUCTOS PARA ESTE LOOK</div>
     <div id="products"></div>
 
@@ -1407,6 +1420,27 @@ window.addEventListener('pointermove',e=>{if(dragging) dragMove(e.clientX);});
 window.addEventListener('pointerup',()=>dragging=false);
 
 // ---------- Acciones ----------
+// ---------- Foto fija mientras se ajusta el maquillaje ----------
+// Se comporta como una fila congelada: la foto acompaña al usuario mientras
+// toca estilos y sliders, y se suelta al llegar a los productos.
+(function stickyFoto(){
+  const wrap=$('stagewrap'), sentinela=$('unstick');
+  if(!('IntersectionObserver' in window)) return;
+
+  // Libera la foto cuando la sección de productos alcanza la parte superior
+  new IntersectionObserver(([e])=>{
+    wrap.classList.toggle('free', e.boundingClientRect.top <= 0 && !e.isIntersecting);
+  }, {threshold:0, rootMargin:'0px 0px -100% 0px'}).observe(sentinela);
+
+  // Detecta si está pegada arriba, para compactar la foto y dejar sitio
+  const centinelaTop=document.createElement('div');
+  centinelaTop.style.cssText='position:absolute;top:0;height:1px;width:100%;';
+  wrap.parentElement.insertBefore(centinelaTop, wrap);
+  new IntersectionObserver(([e])=>{
+    wrap.classList.toggle('stuck', !e.isIntersecting && controls.style.display==='block');
+  }, {threshold:0}).observe(centinelaTop);
+})();
+
 $('scrollcue').onclick=()=>{
   document.querySelector('#controls .section-label').scrollIntoView({behavior:'smooth', block:'start'});
 };
@@ -1425,7 +1459,7 @@ $('btnDownload').onclick=()=>{
   a.click();
   showToast('Imagen descargada');
 };
-$('btnReset').onclick=()=>{ resetToDrop(); compare.style.display='none'; controls.style.display='none'; $('scrollcue').classList.remove('show'); scrollTo({top:0,behavior:'smooth'}); };
+$('btnReset').onclick=()=>{ resetToDrop(); compare.style.display='none'; controls.style.display='none'; $('scrollcue').classList.remove('show'); $('stagewrap').classList.remove('stuck','free'); scrollTo({top:0,behavior:'smooth'}); };
 
 function resetToDrop(){ dropzone.style.display='block'; fileInput.value=''; }
 let toastTimer=null;
