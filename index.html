@@ -121,8 +121,24 @@
   @media (prefers-reduced-motion: reduce){ .scrollcue .arrow{animation:none;} }
   /* Cámara: el video se acota y el botón de captura flota SOBRE él, así nunca
      queda fuera de pantalla por más alto que sea el encuadre del teléfono. */
-  video{width:100%; display:none; max-height:62vh; object-fit:cover; background:#EFEDF8;}
+  /* Vista de cámara tipo selfie: imagen en espejo (como te ves en un espejo
+     real, si no el movimiento se siente invertido) y guía circular de encuadre. */
+  .camview{position:relative; display:none; background:#2A2438;}
+  .camview.on{display:block;}
+  video{width:100%; display:block; max-height:62vh; object-fit:cover;
+    transform:scaleX(-1); background:#EFEDF8;}
   @media (max-height:700px){ video{max-height:54vh;} }
+  .camguide{position:absolute; inset:0; pointer-events:none;}
+  .camguide .ring{
+    position:absolute; left:50%; top:46%; transform:translate(-50%,-50%);
+    width:64vw; max-width:300px; aspect-ratio:1/1.18;
+    border:2px solid rgba(255,255,255,.9); border-radius:50%;
+    box-shadow:0 0 0 100vmax rgba(42,36,56,.42);
+  }
+  .camguide .tip{
+    position:absolute; left:0; right:0; top:14px; text-align:center;
+    color:#fff; font-size:12px; letter-spacing:.05em; text-shadow:0 1px 6px rgba(0,0,0,.5);
+  }
   #captureRow[hidden]{display:none;}
   #captureRow{
     display:flex; position:absolute; left:0; right:0; bottom:0; margin:0;
@@ -312,7 +328,13 @@
       <small>Luz natural · rostro despejado<br>Tu foto se analiza al momento y no se guarda en ningún servidor.</small>
     </div>
 
-    <video id="video" playsinline autoplay muted></video>
+    <div class="camview" id="camview">
+      <video id="video" playsinline autoplay muted></video>
+      <div class="camguide">
+        <div class="tip">Centra tu rostro en el círculo</div>
+        <div class="ring"></div>
+      </div>
+    </div>
     <div class="btnrow" id="captureRow" hidden>
       <button class="btn primary" id="btnCapture">Capturar</button>
       <button class="btn ghost" id="btnCancelCam">Cancelar</button>
@@ -638,8 +660,8 @@ $('btnCamera').onclick=async e=>{
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280}}});
     video.srcObject=stream;
-    dropzone.style.display='none'; video.style.display='block'; captureRow.hidden=false;
-    video.parentElement.scrollIntoView({behavior:'smooth', block:'start'});
+    dropzone.style.display='none'; $('camview').classList.add('on'); captureRow.hidden=false;
+    $('camview').scrollIntoView({behavior:'smooth', block:'start'});
   }catch(err){
     showError('No se pudo acceder a la cámara. Revisa los permisos del navegador o sube una foto.');
   }
@@ -670,7 +692,7 @@ $('btnCapture').onclick=()=>{
 };
 function stopCam(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  video.style.display='none'; captureRow.hidden=true;
+  $('camview').classList.remove('on'); captureRow.hidden=true;
 }
 
 async function processImage(img){
@@ -1119,15 +1141,32 @@ function render(){
     // 1) SOMBRA: banda desde las pestañas hacia la cuenca, en 3 pasadas que
     //    suben más difusas y más tenues (difuminado real)
     if(SH.color){
-      const capas=[{h:.42,a:1.00,b:.016},{h:.72,a:.60,b:.024},{h:1.0,a:.30,b:.034}];
+      const capas=[{h:.42,a:1.00,b:.018},{h:.75,a:.58,b:.028},{h:1.08,a:.28,b:.040}];
+      const inX=lid[0].x, outX=lid[lid.length-1].x, ancho=(outX-inX)||1;
       for(const c of capas){
         layer(ctx=>{
           ctx.globalCompositeOperation='multiply';
           ctx.filter=`blur(${faceW*c.b}px)`;
           inEye(ctx,F,cx=>{
-            cx.fillStyle=hexA(SH.color, SH.alpha*c.a*kE);
+            // El color se apaga a lo largo del ojo en vez de terminar de golpe:
+            // nace de la nada en el lagrimal y se desvanece pasada la cola, que
+            // es donde antes se veía el corte.
+            const g=cx.createLinearGradient(inX-ancho*.10, 0, outX+ancho*.42, 0);
+            const A=SH.alpha*c.a*kE;
+            g.addColorStop(0,    hexA(SH.color, 0));
+            g.addColorStop(.18,  hexA(SH.color, A*.45));
+            g.addColorStop(.45,  hexA(SH.color, A));
+            g.addColorStop(.72,  hexA(SH.color, A*.92));
+            g.addColorStop(1,    hexA(SH.color, 0));
+            cx.fillStyle=g;
             cx.beginPath();
+            // borde inferior, prolongado un poco más allá de la cola para que
+            // el degradado tenga espacio donde morir
             lid.forEach((q,i)=> i===0?cx.moveTo(q.x,q.y):cx.lineTo(q.x,q.y));
+            const ult=lid[lid.length-1], pen=lid[lid.length-2]||ult;
+            const dx=ult.x-pen.x, dy=ult.y-pen.y, dl=Math.hypot(dx,dy)||1;
+            cx.lineTo(ult.x+dx/dl*ancho*.30, ult.y+dy/dl*ancho*.30 - hMax*c.h*.28);
+            // borde superior de vuelta hacia el lagrimal
             for(let i=lid.length-1;i>=0;i--){
               const q=lid[i], t=i/(lid.length-1);          // 0 interno → 1 externo
               cx.lineTo(q.x, q.y - hMax*c.h*(0.45+0.75*t));  // -y = hacia la ceja
@@ -1141,8 +1180,10 @@ function render(){
         ctx.globalCompositeOperation='multiply';
         ctx.filter=`blur(${faceW*.022}px)`;
         inEye(ctx,F,cx=>{
-          cx.fillStyle=hexA(SH.color, SH.alpha*.80*kE);
-          cx.beginPath(); cx.ellipse(w*.58, -w*.02, w*.22, w*.10, -0.18, 0,7); cx.fill();
+          cx.fillStyle=radial(cx, w*.56, -w*.02, w*.30, SH.color, SH.alpha*.75*kE);
+          cx.save(); cx.translate(w*.56,-w*.02); cx.rotate(-0.18); cx.scale(1,.46);
+          cx.beginPath(); cx.arc(0,0, w*.30, 0,7); cx.fill();
+          cx.restore();
         });
       });
       // eco bajo el párpado inferior, tercio externo
@@ -1150,11 +1191,10 @@ function render(){
         ctx.globalCompositeOperation='multiply';
         ctx.filter=`blur(${faceW*.014}px)`;
         inEye(ctx,F,cx=>{
-          const g=cx.createLinearGradient(0,w*.10,0,w*.24);
-          g.addColorStop(0, hexA(SH.color, SH.alpha*.70*kE));
-          g.addColorStop(1, hexA(SH.color, 0));
-          cx.fillStyle=g;
-          cx.beginPath(); cx.ellipse(w*.20, w*.16, w*.34, w*.07, 0,0,7); cx.fill();
+          cx.fillStyle=radial(cx, w*.22, w*.15, w*.36, SH.color, SH.alpha*.62*kE);
+          cx.save(); cx.translate(w*.22, w*.15); cx.scale(1,.28);
+          cx.beginPath(); cx.arc(0,0, w*.36, 0,7); cx.fill();
+          cx.restore();
         });
       });
       // satinado en el centro del párpado móvil
