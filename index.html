@@ -78,9 +78,9 @@
   /* La foto se limita en alto para que en móvil siempre asome el contenido
      siguiente: si ocupa toda la pantalla, el usuario cree que ahí termina. */
   .compare{position:relative; width:100%; display:none; touch-action:none;}
-  .compare canvas{display:block; width:100%; height:auto; max-height:52vh; object-fit:contain;}
+  .compare canvas{display:block; width:100%; height:auto; max-height:64vh; object-fit:contain;}
   #canvasAfter{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; clip-path:inset(0 0 0 50%);}
-  @media (max-height:700px){ .compare canvas{max-height:44vh;} }
+  @media (max-height:700px){ .compare canvas{max-height:56vh;} }
   .divider{
     position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff;
     box-shadow:0 0 8px rgba(0,0,0,.35); cursor:ew-resize;
@@ -98,15 +98,27 @@
   .taglabel.antes{left:10px;} .taglabel.despues{right:10px;}
   .scrollcue{
     display:none; width:100%; border:none; border-top:1px solid var(--line);
-    background:var(--blanco); color:#5F58A0; font-family:inherit; font-size:12.5px;
-    letter-spacing:.06em; padding:11px 12px; cursor:pointer;
+    background:var(--lavanda-bruma); color:#5F58A0; font-family:inherit; font-size:13.5px;
+    letter-spacing:.05em; padding:14px 12px; cursor:pointer;
     align-items:center; justify-content:center; gap:8px;
   }
+  .scrollcue:active{background:#E4DFF5;}
   .scrollcue.show{display:flex;}
   .scrollcue .arrow{font-size:15px; line-height:1; animation:bob 1.6s ease-in-out infinite;}
   @keyframes bob{0%,100%{transform:translateY(-1px);}50%{transform:translateY(3px);}}
   @media (prefers-reduced-motion: reduce){ .scrollcue .arrow{animation:none;} }
-  video{width:100%; display:none;}
+  /* Cámara: el video se acota y el botón de captura flota SOBRE él, así nunca
+     queda fuera de pantalla por más alto que sea el encuadre del teléfono. */
+  video{width:100%; display:none; max-height:62vh; object-fit:cover; background:#EFEDF8;}
+  @media (max-height:700px){ video{max-height:54vh;} }
+  #captureRow[hidden]{display:none;}
+  #captureRow{
+    display:flex; position:absolute; left:0; right:0; bottom:0; margin:0;
+    padding:14px 12px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(51,47,69,0), rgba(51,47,69,.55));
+    z-index:6;
+  }
+  #captureRow .btn{box-shadow:0 4px 14px rgba(0,0,0,.25);}
   .loading{
     position:absolute; inset:0; display:none; align-items:center; justify-content:center;
     flex-direction:column; gap:12px; background:rgba(247,246,251,.9); z-index:5;
@@ -284,7 +296,7 @@
     </div>
 
     <video id="video" playsinline autoplay muted></video>
-    <div class="btnrow" id="captureRow" style="display:none; padding-bottom:18px;">
+    <div class="btnrow" id="captureRow" hidden>
       <button class="btn primary" id="btnCapture">Capturar</button>
       <button class="btn ghost" id="btnCancelCam">Cancelar</button>
     </div>
@@ -298,7 +310,7 @@
     </div>
 
     <button class="scrollcue" id="scrollcue" type="button" aria-label="Ver el análisis y las opciones">
-      <span>Tu análisis y opciones</span><span class="arrow" aria-hidden="true">⌄</span>
+      <span>Ver mi análisis y personalizar</span><span class="arrow" aria-hidden="true">⌄</span>
     </button>
 
     <div class="loading" id="loading">
@@ -603,7 +615,8 @@ $('btnCamera').onclick=async e=>{
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280}}});
     video.srcObject=stream;
-    dropzone.style.display='none'; video.style.display='block'; captureRow.style.display='flex';
+    dropzone.style.display='none'; video.style.display='block'; captureRow.hidden=false;
+    video.parentElement.scrollIntoView({behavior:'smooth', block:'start'});
   }catch(err){
     showError('No se pudo acceder a la cámara. Revisa los permisos del navegador o sube una foto.');
   }
@@ -634,7 +647,7 @@ $('btnCapture').onclick=()=>{
 };
 function stopCam(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  video.style.display='none'; captureRow.style.display='none';
+  video.style.display='none'; captureRow.hidden=true;
 }
 
 async function processImage(img){
