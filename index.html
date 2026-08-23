@@ -721,7 +721,7 @@ function eyeFrame(E, LID, BROW){
     const dx=p.x-cx, dy=p.y-cy;
     return {x:(dx*ca - dy*sa)*mirror, y:dx*sa + dy*ca};
   };
-  const F={inn,out,cx,cy,ang,mirror,eyeW:dist(inn,out), toLocal};
+  const F={E,inn,out,cx,cy,ang,mirror,eyeW:dist(inn,out), toLocal};
   if(LID)  F.lid  = LID.map(i=>toLocal(P(i)));        // línea de pestañas, local
   if(BROW){
     let bx=0,by=0; for(const i of BROW){ const q=P(i); bx+=q.x; by+=q.y; }
@@ -729,6 +729,87 @@ function eyeFrame(E, LID, BROW){
   }
   return F;
 }
+// ---- Perfil de delineado según la forma de CADA ojo ----
+// Un mismo delineado no favorece a todos: lo que alarga un ojo redondo cierra
+// uno alargado, y una cola que levanta un ojo caído tumba uno ya elevado.
+// Aquí se mide la forma real del ojo y se devuelve el trazo que le corresponde,
+// siguiendo los criterios que usa un maquillador: elevar el caído, equilibrar
+// el elevado, alargar el redondo, y en el párpado con poco espacio mantener la
+// línea fina y llevar el cuerpo del trazo a la cola, donde sí queda a la vista.
+function linerProfile(F, S, LID){
+  const lid=F.lid.slice().sort((a,b)=>a.x-b.x);
+  const inner=lid[0], outer=lid[lid.length-1];
+
+  // Inclinación del ojo RESPECTO AL ROSTRO (no a sí mismo): se lleva la
+  // horizontal de la cara al marco local y se compara con el eje del ojo.
+  const fa=F.toLocal(P(FACE_L)), fb=F.toLocal(P(FACE_R));
+  const temple = fa.x>fb.x ? fa : fb, medial = fa.x>fb.x ? fb : fa;
+  // ángulo de la horizontal facial en el marco del ojo:
+  // >0 significa que la cara "baja" hacia la sien, o sea el ojo va elevado
+  const tilt=Math.atan2(temple.y-medial.y, temple.x-medial.x);
+
+  // Apertura: alto del ojo respecto a su largo
+  const top=F.toLocal(P(F.E.top)), bot=F.toLocal(P(F.E.bottom));
+  const apert=Math.abs(bot.y-top.y)/F.eyeW;
+
+  // Dónde está el punto más alto del párpado: hacia el centro = redondo,
+  // desplazado al lagrimal = almendrado
+  let peak=lid[0]; for(const q of lid) if(q.y<peak.y) peak=q;
+  const peakT=(peak.x-inner.x)/((outer.x-inner.x)||1);   // 0 interno → 1 externo
+
+  // Espacio de párpado hasta la ceja: poco espacio = párpado encapotado
+  const espacio=Math.abs(F.brow.y-peak.y)/F.eyeW;
+
+  // ---- Clasificación ----
+  let forma='almendrado';
+  if(tilt >  0.055) forma='elevado';
+  else if(tilt < -0.055) forma='caido';
+  if(apert >= .40) forma= forma==='almendrado' ? 'redondo' : forma;
+  const encapotado = espacio < .30;
+  const monolid = apert < .26 && espacio < .38;
+
+  // ---- Trazo base según el estilo elegido ----
+  let ang  = S.liner==='classic'? -0.24 : S.liner==='idol'? -0.11 : 0.12;
+  let len  = S.liner==='classic'? .30   : S.liner==='idol'? .21    : .24;
+  let th   = S.liner==='classic'? .056  : .042;
+  let tPeak= .95;     // dónde engrosa la línea (1 = en la cola)
+  let lower= 1;       // peso de la línea inferior externa
+
+  // ---- Ajustes por forma ----
+  if(forma==='caido'){
+    // se levanta la cola y se apoya el peso al final para elevar la mirada;
+    // nada de sombra inferior externa, que arrastraría el ojo hacia abajo
+    ang  -= 0.16 + Math.min(0.10, Math.abs(tilt)*0.8);
+    len  += .06;  th += .006;  tPeak=1.0;  lower=.45;
+  } else if(forma==='elevado'){
+    // ya sube por sí solo: cola casi horizontal y corta, y se compensa
+    // con algo más de definición abajo para equilibrar
+    ang  += 0.12;  len -= .04;  tPeak=.80;  lower=1.35;
+  } else if(forma==='redondo'){
+    // alargar: cola más larga y línea fina en el centro para no acortarlo
+    ang  -= 0.04;  len += .09;  th -= .004;  tPeak=1.0;  lower=.85;
+  } else {
+    // almendrado: la forma que ya está equilibrada, solo se define
+    len  -= .01;  tPeak=.90;
+  }
+
+  if(encapotado || monolid){
+    // con poco espacio de párpado, la línea gruesa desaparece al abrir el ojo:
+    // se mantiene fina pegada a las pestañas y el cuerpo se lleva a la cola,
+    // que es la parte que sí queda visible
+    th   *= .78;
+    len  += .05;
+    ang  -= 0.05;
+    tPeak = 1.0;
+  }
+  if(apert < .28) th *= .92;          // ojo de apertura pequeña: nada de peso arriba
+
+  return {
+    ang, len:F.eyeW*len, th:F.eyeW*th, tPeak, lower,
+    forma, encapotado, monolid, apert, tilt
+  };
+}
+
 // Ejecuta un dibujo dentro del marco local del ojo
 function inEye(ctx, F, draw){
   ctx.save();
@@ -777,6 +858,29 @@ function analyzeFace(){
              +(dist(P(EYE_R.top),P(EYE_R.bottom))/dist(P(EYE_R.outer),P(EYE_R.inner))))/2;
   const eyeSize= apert>=.36?'grandes': apert<=.28?'pequeños':'medios';
   const linerMode= eyeSize==='grandes'?'solo-delineado':'agrandar';
+  // Forma del ojo: se mide la inclinación respecto a la horizontal del rostro
+  // y el espacio de párpado, igual que hace el motor de delineado.
+  let eyeShape='almendrados', eyeHooded=false;
+  try{
+    const fL=P(FACE_L), fR=P(FACE_R);
+    const faceAng=Math.atan2(fR.y-fL.y, fR.x-fL.x);
+    const tilts=[[EYE_L,BROW_L],[EYE_R,BROW_R]].map(([E,BR])=>{
+      const i=P(E.inner), o=P(E.outer);
+      const lado=(o.x-i.x)>=0?1:-1;
+      const a=Math.atan2((o.y-i.y)*lado,(o.x-i.x)*lado);
+      return (faceAng-a)*1;   // >0: la cola queda más alta que la horizontal
+    });
+    const tilt=(tilts[0]+tilts[1])/2;
+    if(tilt >  0.055) eyeShape='elevados';
+    else if(tilt < -0.055) eyeShape='caídos';
+    else if(apert >= .40) eyeShape='redondos';
+    // espacio entre el párpado y la ceja
+    const esp=[[EYE_L,BROW_L],[EYE_R,BROW_R]].map(([E,BR])=>{
+      let by=0; for(const i of BR) by+=P(i).y; by/=BR.length;
+      return Math.abs(by-P(E.top).y)/dist(P(E.inner),P(E.outer));
+    });
+    eyeHooded = (esp[0]+esp[1])/2 < .30;
+  }catch(e){}
 
   const tips=[];
   tips.push(`Piel ${depth} de subtono ${undertoneTxt}: te favorecen los ${undertone==='warm'?'corales, duraznos y terracotas':undertone==='cool'?'rosas, berries y rojos azulados':'rosas té, malvas y corales suaves'}.`);
@@ -788,10 +892,18 @@ function analyzeFace(){
   else tips.push('Labios medios: puedes alternar entre gradient y color completo según la ocasión.');
   if(eyes==='juntos') tips.push('Ilumina el lagrimal y concentra sombra y delineado en el tercio externo del ojo.');
   else if(eyes==='separados') tips.push('Concentra la sombra hacia el lagrimal para equilibrar la mirada.');
-  if(linerMode==='agrandar') tips.push('Ojos '+eyeSize+': delineado ajustado a la línea de pestañas, un poco de sombra bajo el párpado inferior y luz en el lagrimal abren la mirada sin que se note maquillaje encima.');
-  else tips.push('Ojos grandes: con un delineado limpio que siga tu línea natural es suficiente; recargar solo los achica.');
+  const tipForma={
+    'caídos':'Ojos con la cola algo baja: el delineado se eleva al final y se evita la sombra bajo el borde externo, que arrastraría la mirada hacia abajo.',
+    'elevados':'Ojos naturalmente elevados: la cola va corta y casi horizontal, y se define un poco más el borde inferior para equilibrar.',
+    'redondos':'Ojos redondos: el delineado se extiende un poco hacia afuera y se mantiene fino al centro, para alargar la forma.',
+    'almendrados':'Ojos almendrados: la forma ya está equilibrada, así que solo se define el contorno sin modificarla.'
+  }[eyeShape];
+  tips.push(tipForma);
+  if(eyeHooded) tips.push('Tienes poco espacio de párpado móvil: la línea va fina pegada a las pestañas y el cuerpo del trazo se lleva a la cola, que es la parte que queda visible con el ojo abierto.');
+  else if(linerMode==='agrandar') tips.push('Un toque de sombra bajo el párpado inferior y luz en el lagrimal abren la mirada sin que se note maquillaje encima.');
+  else tips.push('Con un delineado limpio que siga tu línea natural es suficiente; recargar solo achica el ojo.');
 
-  return {depth, undertone, undertoneTxt, shape, lips, eyes, eyeSize, linerMode, tips, faceW};
+  return {depth, undertone, undertoneTxt, shape, lips, eyes, eyeSize, eyeShape, eyeHooded, linerMode, tips, faceW};
 }
 
 // ---------- Recomendación (análisis + quiz) ----------
@@ -853,9 +965,12 @@ function computeReco(){
   const clamp=v=>Math.max(30,Math.min(180,Math.round(v*mult)));
   const k={lips:clamp(kL), blush:clamp(kB), eyes:clamp(kE), glow:clamp(kG)};
 
-  const ojosTxt = A.linerMode==='agrandar'
-    ? 'delineado ajustado que abre la mirada'
-    : 'delineado limpio, sin recargar tus ojos';
+  const ojosTxt = {
+    'caídos':'un delineado que eleva la cola del ojo',
+    'elevados':'un delineado corto y equilibrado',
+    'redondos':'un delineado que alarga la forma del ojo',
+    'almendrados':'un delineado que sigue tu línea natural'
+  }[A.eyeShape] || 'un delineado ajustado a tus ojos';
 
   reco={look, set, k, recColor,
     texto:`Te sugerimos <b>${LOOKS[look].name}</b>: ${why}. ` +
@@ -893,7 +1008,7 @@ function renderAnalysis(){
     <span class="tag">Piel: <b>${A.depth}, subtono ${A.undertoneTxt}</b></span>
     <span class="tag">Rostro: <b>${A.shape}</b></span>
     <span class="tag">Labios: <b>${A.lips}</b></span>
-    <span class="tag">Ojos: <b>${A.eyes}</b></span>`;
+    <span class="tag">Ojos: <b>${A.eyeShape}${A.eyeHooded?', párpado encapotado':''}</b></span>`;
   $('analysisTips').innerHTML=A.tips.map(t=>`<li>${t}</li>`).join('');
 }
 
@@ -966,6 +1081,7 @@ function render(){
   // trazo, imposible que uno quede descolocado respecto al otro.
   const SH=SHADOWS[S.shadow];
   const OJOS=[{E:EYE_L, LID:LID_L, BROW:BROW_L}, {E:EYE_R, LID:LID_R, BROW:BROW_R}];
+  const formasOjo=[];
 
   for(const {E,LID,BROW} of OJOS){
     const F=eyeFrame(E, LID, BROW);
@@ -1032,9 +1148,12 @@ function render(){
     // 2) DELINEADO
     if(S.liner!=='none'){
       const agrandar = S.liner==='idol' && analysis && analysis.linerMode==='agrandar';
-      const wingAng  = S.liner==='classic'? -0.24 : S.liner==='idol'? -0.10 : 0.12;
-      const wingLen  = w*(S.liner==='classic'?.30 : S.liner==='idol'? (agrandar?.27:.19) : .24);
-      const thick    = w*(S.liner==='idol'? (agrandar?.052:.040) : .056);
+      // Cada ojo se mide por separado: la forma manda sobre el preset
+      const LP = linerProfile(F, S, LID);
+      formasOjo.push(LP);
+      const wingAng  = LP.ang;
+      const wingLen  = LP.len * (agrandar?1.12:1);
+      const thick    = LP.th  * (agrandar?1.12:1);
 
       layer(ctx=>{
         ctx.globalCompositeOperation='multiply';
@@ -1043,10 +1162,19 @@ function render(){
           cx.strokeStyle=hexA('#3E2C24', .72*kE);
           cx.lineCap='round'; cx.lineJoin='round';
           // línea sobre las pestañas: fina en el lagrimal, con cuerpo en la cola
+          // El grosor crece hacia el punto que le conviene a ESTE ojo (LP.tPeak):
+          // en la cola si hay que elevar o alargar, algo antes si el ojo ya sube.
           for(let i=0;i<lid.length-1;i++){
             const a=lid[i], b=lid[i+1], t=i/(lid.length-2);
-            cx.lineWidth=Math.max(1.2, thick*(0.40+1.00*t));
-            cx.globalAlpha=0.45+0.55*t;
+            // curva de grosor: mínima en el lagrimal, máxima en tPeak, y si el
+            // pico está antes del final, la línea se afina otra vez al salir
+            const d=Math.abs(t-LP.tPeak);
+            const peso=Math.max(.10, 1-Math.pow(d/Math.max(LP.tPeak,.35),1.6));
+            // el primer tramo nace prácticamente invisible: un delineado real
+            // no arranca de golpe en el lagrimal, aparece poco a poco
+            const nace=Math.min(1, Math.pow(t/.30, 1.5));
+            cx.lineWidth=Math.max(.7, thick*(0.10+1.15*peso)*(0.35+0.65*nace));
+            cx.globalAlpha=(0.10+0.90*peso)*nace;
             cx.beginPath(); cx.moveTo(a.x,a.y-w*.012); cx.lineTo(b.x,b.y-w*.012); cx.stroke();
           }
           cx.globalAlpha=1;
@@ -1072,8 +1200,12 @@ function render(){
         ctx.filter=`blur(${faceW*.006}px)`;
         inEye(ctx,F,cx=>{
           const top=F.toLocal(P(E.top));
-          cx.fillStyle=hexA('#3E2C24', .20*kE);
-          cx.beginPath(); cx.ellipse(w*.06, top.y-w*.016, w*.42, w*.026, 0,0,7); cx.fill();
+          const g=cx.createLinearGradient(-w*.30,0, w*.50,0);
+          g.addColorStop(0,   hexA('#3E2C24', 0));
+          g.addColorStop(.45, hexA('#3E2C24', .12*kE));
+          g.addColorStop(1,   hexA('#3E2C24', .22*kE));
+          cx.fillStyle=g;
+          cx.beginPath(); cx.ellipse(w*.12, top.y-w*.016, w*.40, w*.024, 0,0,7); cx.fill();
         });
       });
 
@@ -1083,8 +1215,8 @@ function render(){
         ctx.filter=`blur(${faceW*.007}px)`;
         inEye(ctx,F,cx=>{
           const bot=F.toLocal(P(E.bottom));
-          cx.strokeStyle=hexA('#4A342B', .42*kE);
-          cx.lineCap='round'; cx.lineWidth=Math.max(1, w*.030);
+          cx.strokeStyle=hexA('#4A342B', .42*kE*LP.lower);
+          cx.lineCap='round'; cx.lineWidth=Math.max(1, w*.030*LP.lower);
           cx.beginPath();
           cx.moveTo(bot.x, bot.y+w*.012);
           cx.quadraticCurveTo(w*.30, bot.y+w*.014, w*.50, w*.02);
@@ -1109,7 +1241,7 @@ function render(){
           ctx.globalCompositeOperation='multiply';
           ctx.filter=`blur(${faceW*.015}px)`;
           inEye(ctx,F,cx=>{
-            cx.fillStyle=hexA('#8A6A60', .24*kE);
+            cx.fillStyle=hexA('#8A6A60', .24*kE*LP.lower);
             cx.beginPath(); cx.ellipse(w*.24, w*.17, w*.36, w*.075, 0,0,7); cx.fill();
           });
         });
@@ -1133,6 +1265,12 @@ function render(){
   // --- Labios ---
   const LS=LIP_STYLES[S.lipStyle];
   const lipAlphaBase=.55*LS.mult;
+  // Con la boca cerrada, el contorno interno es una franja finísima: recortarlo
+  // deja un filo claro cruzando el labio. Solo se recorta si la boca está
+  // realmente abierta (para no pintar los dientes).
+  const aperturaBoca = dist(P(13),P(14)) / (dist(P(61),P(291))||1);
+  const bocaAbierta = aperturaBoca > .07;
+
   const lipDraw=(ctx,a)=>{
     const mTop=P(13),mBot=P(14);
     const cx=(mTop.x+mBot.x)/2, cy=(mTop.y+mBot.y)/2;
@@ -1141,20 +1279,24 @@ function render(){
     grad.addColorStop(0,hexA(S.lipColor,a));
     grad.addColorStop(1,hexA(S.lipColor,a*(1-LS.grad)));
     ctx.fillStyle=grad;
-    ctx.beginPath(); pathPoly(ctx,LIPS_OUTER); pathPoly(ctx,LIPS_INNER);
-    ctx.fill('evenodd');
+    ctx.beginPath(); pathPoly(ctx,LIPS_OUTER);
+    if(bocaAbierta) pathPoly(ctx,LIPS_INNER);
+    ctx.fill(bocaAbierta?'evenodd':'nonzero');
   };
-  layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${Math.max(1.5,faceW*.006)}px)`; lipDraw(ctx,lipAlphaBase*kL); });
-  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.32); });
-  // brillo central del labio: el acabado jugoso de los tintes coreanos
+  // El color se aplica con bastante difuminado para que el borde del labio se
+  // funda con la piel: un contorno nítido se lee como línea dibujada.
+  layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${Math.max(2,faceW*.011)}px)`; lipDraw(ctx,lipAlphaBase*kL); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(2.5,faceW*.015)}px)`; lipDraw(ctx,lipAlphaBase*kL*.26); });
+
+  // brillo central: manchas suaves dentro del labio, nunca cerca del borde
   layer(ctx=>{
     ctx.globalCompositeOperation='soft-light';
-    ctx.filter=`blur(${faceW*.010}px)`;
-    const mTop=P(13), mBot=P(14), lo=P(17);
+    ctx.filter=`blur(${faceW*.016}px)`;
+    const mTop=P(13), mBot=P(14), lo=P(17), arco=P(0);
     const mouthW=dist(P(61),P(291));
-    ctx.fillStyle=hexA('#FFFFFF', .34*kL);
-    ctx.beginPath(); ctx.ellipse(mTop.x, (mTop.y+P(0).y)/2, mouthW*.20, faceW*.011, 0,0,7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(mBot.x, (mBot.y+lo.y)/2, mouthW*.24, faceW*.013, 0,0,7); ctx.fill();
+    ctx.fillStyle=hexA('#FFFFFF', .26*kL);
+    ctx.beginPath(); ctx.ellipse(mTop.x, (mTop.y*2+arco.y)/3, mouthW*.16, faceW*.008, 0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(mBot.x, (mBot.y+lo.y)/2, mouthW*.19, faceW*.010, 0,0,7); ctx.fill();
   });
 
   // --- Aegyo sal ---
