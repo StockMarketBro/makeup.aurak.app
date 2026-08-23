@@ -561,7 +561,7 @@ function onResults(res){
   computeReco();          // el mejor look posible (análisis + quiz)
   applyReco();            // se aplica de inmediato
   renderAnalysis(); buildAllChips(); renderProducts(); render();
-  setSplit(28);           // el DESPUÉS domina la vista apenas termina el análisis
+  setSplit(50);           // mitad y mitad: el antes/después se compara de un vistazo
   compare.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
