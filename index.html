@@ -372,10 +372,10 @@ const SKIN_FINISHES={
   matte:{name:'Mate suave', dot:'#E8DDD6', glow:0},
 };
 const SHADOWS={
-  durazno:{name:'Durazno', dot:'#E8A87C', color:'#DE9868', alpha:.20},
-  rosa:{name:'Rosa coreano', dot:'#D9A0A8', color:'#CE8890', alpha:.20},
-  tierra:{name:'Marrón tierra', dot:'#B08466', color:'#9E7050', alpha:.22},
-  malva:{name:'Malva', dot:'#A98BA4', color:'#997892', alpha:.20},
+  durazno:{name:'Durazno coral', dot:'#E79A78', color:'#DD8A66', alpha:.24},
+  rosa:{name:'Rosa coreano', dot:'#DE97A0', color:'#D07F88', alpha:.24},
+  tierra:{name:'Marrón tierra', dot:'#B08466', color:'#9C6D4E', alpha:.24},
+  malva:{name:'Malva', dot:'#A98BA4', color:'#96738F', alpha:.23},
   none:{name:'Sin sombra', dot:'#FFFFFF', color:null, alpha:0},
 };
 const LINERS={
@@ -669,7 +669,7 @@ function computeReco(){
 
   // --- Ojos: la app decide si conviene abrir la mirada o solo delinear ---
   set.liner = A.linerMode==='agrandar' ? 'idol' : (look==='idol'?'classic':'idol');
-  if(A.eyeSize==='grandes'&&look!=='idol') set.shadow= look==='glass'?'none':set.shadow;
+  if(look==='glass'&&A.eyeSize==='grandes') set.shadow='rosa';
 
   // --- Intensidad calibrada POR ZONA según los rasgos ---
   // base neutra 100; se ajusta hacia arriba o abajo según lo que le siente mejor.
@@ -684,7 +684,7 @@ function computeReco(){
   if(A.shape==='redondo'||A.shape==='cuadrado') kB+=8;
   else if(A.shape==='alargado') kB-=8;
   // Ojos: los grandes solo necesitan definición; los pequeños, un poco más de trabajo.
-  if(A.eyeSize==='grandes') kE-=25; else if(A.eyeSize==='pequeños') kE+=12;
+  if(A.eyeSize==='grandes') kE-=12; else if(A.eyeSize==='pequeños') kE+=15;
   // El glow se modera en piel clara y sube un punto en piel media/morena.
   if(A.depth!=='clara') kG+=8;
 
@@ -800,85 +800,186 @@ function render(){
   layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${faceW*.045}px)`; blushDraw(ctx,S.blush.alpha*kB); });
   layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${faceW*.05}px)`; blushDraw(ctx,S.blush.alpha*kB*.42); });
 
-  // --- Sombra de ojos ---
+  // --- Sombra de ojos (sigue la anatomía real del párpado) ---
+  // En vez de elipses fijas, la sombra se construye sobre la propia línea de
+  // pestañas desplazada hacia la ceja: así se adapta a la forma del ojo y al
+  // ángulo de la cara, y se difumina hasta desaparecer en el borde superior.
   const SH=SHADOWS[S.shadow];
   if(SH.color){
-    layer(ctx=>{
-      ctx.globalCompositeOperation='multiply';
-      ctx.filter=`blur(${faceW*.03}px)`;
-      for(const E of [EYE_L,EYE_R]){
-        const top=P(E.top), inn=P(E.inner), out=P(E.outer);
-        const cx=(inn.x+out.x)/2, cy=top.y-faceW*.028;
-        const rx=dist(inn,out)*.62, ry=faceW*.035;
-        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
-        ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
-        ctx.fillStyle=hexA(SH.color,SH.alpha*kE);
-        ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,7); ctx.fill();
-        ctx.restore();
+    const ojos=[{LID:LID_L, BROW:BROW_L, E:EYE_L}, {LID:LID_R, BROW:BROW_R, E:EYE_R}];
+    for(const {LID,BROW,E} of ojos){
+      const inn=P(E.inner), out=P(E.outer);
+      const eyeW=dist(inn,out);
+      const eyeC={x:(inn.x+out.x)/2, y:(inn.y+out.y)/2};
+      // dirección "hacia la ceja" calculada del rostro real, no asumida
+      let bx=0,by=0; for(const i of BROW){ const q=P(i); bx+=q.x; by+=q.y; }
+      bx/=BROW.length; by/=BROW.length;
+      let ux=bx-eyeC.x, uy=by-eyeC.y;
+      const ul=Math.hypot(ux,uy)||1; ux/=ul; uy/=ul;
+      const hMax=Math.min(ul*.62, eyeW*.42);      // altura de la sombra
+      const outward=(out.x-inn.x)>0?1:-1;
+
+      // banda que va de la línea de pestañas hacia la cuenca, en 3 pasadas que
+      // se hacen más tenues y más difusas conforme suben (difuminado real)
+      const capas=[{h:.42,a:1.00,b:.016},{h:.72,a:.62,b:.024},{h:1.0,a:.32,b:.034}];
+      for(const c of capas){
+        layer(ctx=>{
+          ctx.globalCompositeOperation='multiply';
+          ctx.filter=`blur(${faceW*c.b}px)`;
+          ctx.fillStyle=hexA(SH.color, SH.alpha*c.a*kE);
+          ctx.beginPath();
+          // borde inferior: la línea de pestañas
+          LID.forEach((idx,i)=>{ const q=P(idx); i===0?ctx.moveTo(q.x,q.y):ctx.lineTo(q.x,q.y); });
+          // borde superior: la misma línea empujada hacia la ceja, con más
+          // altura hacia el exterior (así la sombra sube en la cola del ojo)
+          for(let i=LID.length-1;i>=0;i--){
+            const q=P(LID[i]);
+            const t=i/(LID.length-1);                 // 0 interno → 1 externo
+            const h=hMax*c.h*(0.45+0.75*t);
+            ctx.lineTo(q.x+ux*h, q.y+uy*h);
+          }
+          ctx.closePath(); ctx.fill();
+        });
       }
-    });
+
+      // prolongación externa: pequeña difuminación hacia afuera y abajo
+      layer(ctx=>{
+        ctx.globalCompositeOperation='multiply';
+        ctx.filter=`blur(${faceW*.022}px)`;
+        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
+        const ox=out.x+outward*eyeW*.10, oy=out.y+faceW*.004;
+        ctx.save(); ctx.translate(ox,oy); ctx.rotate(ang);
+        ctx.fillStyle=hexA(SH.color, SH.alpha*.85*kE);
+        ctx.beginPath(); ctx.ellipse(0,0, eyeW*.22, faceW*.024, 0,0,7); ctx.fill();
+        ctx.restore();
+      });
+
+      // eco bajo el párpado inferior, solo en el tercio externo
+      layer(ctx=>{
+        ctx.globalCompositeOperation='multiply';
+        ctx.filter=`blur(${faceW*.014}px)`;
+        const bot=P(E.bottom);
+        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
+        const bxp=bot.x+(out.x-inn.x)*.20, byp=bot.y-uy*faceW*.006;
+        ctx.save(); ctx.translate(bxp,byp); ctx.rotate(ang);
+        const g=ctx.createLinearGradient(0,-faceW*.006,0,faceW*.014);
+        g.addColorStop(0, hexA(SH.color, SH.alpha*.70*kE));
+        g.addColorStop(1, hexA(SH.color, 0));
+        ctx.fillStyle=g;
+        ctx.beginPath(); ctx.ellipse(0,0, eyeW*.34, faceW*.012, 0,0,7); ctx.fill();
+        ctx.restore();
+      });
+
+      // satinado en el centro del párpado móvil, contenido dentro del ojo
+      layer(ctx=>{
+        ctx.globalCompositeOperation='soft-light';
+        ctx.filter=`blur(${faceW*.012}px)`;
+        const sx=eyeC.x+ux*hMax*.30, sy=eyeC.y+uy*hMax*.30;
+        ctx.fillStyle=radial(ctx,sx,sy,eyeW*.24,'#FFF6EC', .40*kE);
+        ctx.beginPath(); ctx.arc(sx,sy,eyeW*.24,0,7); ctx.fill();
+      });
+    }
   }
 
   // --- Delineado (adaptativo según la apertura del ojo) ---
+  // Referencia coreana: línea nítida pegada a las pestañas, casi invisible en el
+  // lagrimal y con cuerpo hacia la cola, más una extensión recta y corta.
   if(S.liner!=='none'){
-    // 'idol' se adapta: agranda si el ojo es pequeño/medio, solo delinea si es grande
     const agrandar = S.liner==='idol' && analysis && analysis.linerMode==='agrandar';
-    const wingAng  = S.liner==='classic'? -0.28 : S.liner==='idol'? -0.12 : 0.10;
-    const wingLen  = faceW*(S.liner==='classic'?.032 : S.liner==='idol'? (agrandar?.026:.018) : .026);
-    const thick    = S.liner==='idol'? (agrandar?.0060:.0045) : .0065;
+    const wingAng  = S.liner==='classic'? -0.24 : S.liner==='idol'? -0.10 : 0.12;
+    const wingLen  = faceW*(S.liner==='classic'?.040 : S.liner==='idol'? (agrandar?.036:.026) : .032);
+    const thick    = S.liner==='idol'? (agrandar?.0072:.0056) : .0078;
 
     layer(ctx=>{
       ctx.globalCompositeOperation='multiply';
-      ctx.filter=`blur(${Math.max(1, faceW*.0025)}px)`;
-      ctx.strokeStyle=hexA('#4A342B', .58*kE);
+      ctx.filter=`blur(${Math.max(.8, faceW*.0018)}px)`;
+      ctx.strokeStyle=hexA('#3E2C24', .72*kE);
       ctx.lineCap='round'; ctx.lineJoin='round';
       for(const LID of [LID_L,LID_R]){
-        // línea superior: más gruesa hacia el exterior, casi invisible en el lagrimal
         for(let i=0;i<LID.length-1;i++){
           const a=P(LID[i]), b=P(LID[i+1]);
-          const t=i/(LID.length-2);                        // 0 interno → 1 externo
-          ctx.lineWidth=Math.max(1, faceW*thick*(0.45+0.85*t));
-          ctx.globalAlpha=0.55+0.45*t;
+          const t=i/(LID.length-2);
+          ctx.lineWidth=Math.max(1.2, faceW*thick*(0.40+1.00*t));
+          ctx.globalAlpha=0.45+0.55*t;
           ctx.beginPath();
-          ctx.moveTo(a.x, a.y-faceW*.002);
-          ctx.lineTo(b.x, b.y-faceW*.002);
+          ctx.moveTo(a.x, a.y-faceW*.0018);
+          ctx.lineTo(b.x, b.y-faceW*.0018);
           ctx.stroke();
         }
         ctx.globalAlpha=1;
-        // extensión externa: corta y en la dirección natural del ojo
+        // extensión externa: recta, corta, en la dirección del ojo
         const inn=P(LID[0]), out=P(LID[LID.length-1]);
         let dx=out.x-inn.x, dy=out.y-inn.y;
         const len=Math.hypot(dx,dy); dx/=len; dy/=len;
         const ca=Math.cos(wingAng), sa=Math.sin(wingAng);
         const wx=dx*ca - dy*sa, wy=dx*sa + dy*ca;
-        ctx.lineWidth=Math.max(1, faceW*thick);
+        // se afina hacia la punta
+        const seg=4;
+        for(let i=0;i<seg;i++){
+          const t0=i/seg, t1=(i+1)/seg;
+          ctx.lineWidth=Math.max(.6, faceW*thick*(1-t0*.85));
+          ctx.beginPath();
+          ctx.moveTo(out.x+wx*wingLen*t0, out.y-faceW*.0018+wy*wingLen*t0);
+          ctx.lineTo(out.x+wx*wingLen*t1, out.y-faceW*.0018+wy*wingLen*t1);
+          ctx.stroke();
+        }
+      }
+    });
+
+    // Pestañas: densidad sutil sobre la línea superior (da definición sin dibujar pelos)
+    layer(ctx=>{
+      ctx.globalCompositeOperation='multiply';
+      ctx.filter=`blur(${faceW*.006}px)`;
+      for(const E of [EYE_L,EYE_R]){
+        const top=P(E.top), inn=P(E.inner), out=P(E.outer);
+        const eyeW=dist(inn,out);
+        const ang=Math.atan2(out.y-inn.y,out.x-inn.x);
+        const cx=(inn.x+out.x)/2+(out.x-inn.x)*.10;
+        ctx.save(); ctx.translate(cx, top.y-faceW*.004); ctx.rotate(ang);
+        ctx.fillStyle=hexA('#3E2C24', .20*kE);
+        ctx.beginPath(); ctx.ellipse(0,0, eyeW*.42, faceW*.006, 0,0,7); ctx.fill();
+        ctx.restore();
+      }
+    });
+
+    // Línea inferior externa (tightline suave): presente en las referencias
+    layer(ctx=>{
+      ctx.globalCompositeOperation='multiply';
+      ctx.filter=`blur(${faceW*.007}px)`;
+      ctx.strokeStyle=hexA('#4A342B', .42*kE);
+      ctx.lineCap='round';
+      ctx.lineWidth=Math.max(1, faceW*.005);
+      for(const E of [EYE_L,EYE_R]){
+        const bot=P(E.bottom), inn=P(E.inner), out=P(E.outer);
+        const ox=(out.x-inn.x);
         ctx.beginPath();
-        ctx.moveTo(out.x, out.y-faceW*.002);
-        ctx.lineTo(out.x+wx*wingLen, out.y-faceW*.002+wy*wingLen);
+        ctx.moveTo(bot.x+ox*.05, bot.y+faceW*.003);
+        ctx.quadraticCurveTo(bot.x+ox*.30, bot.y+faceW*.004, out.x, out.y+faceW*.002);
         ctx.stroke();
       }
     });
 
-    // Efecto de ojo agrandado (solo si hace falta): sombra difusa bajo la línea
-    // inferior externa + luz en el lagrimal. Sutil, sin que se note maquillaje.
+    // Luz en el lagrimal: abre la mirada, presente en casi toda referencia coreana
+    layer(ctx=>{
+      ctx.globalCompositeOperation='soft-light';
+      ctx.filter=`blur(${faceW*.011}px)`;
+      ctx.fillStyle=hexA('#FFF8F2', (agrandar?.30:.22)*kE);
+      for(const E of [EYE_L,EYE_R]){
+        const p=P(E.inner);
+        ctx.beginPath(); ctx.arc(p.x,p.y, faceW*.018, 0,7); ctx.fill();
+      }
+    });
+
+    // Efecto de ojo agrandado: profundidad extra bajo el tercio externo inferior
     if(agrandar){
       layer(ctx=>{
         ctx.globalCompositeOperation='multiply';
-        ctx.filter=`blur(${faceW*.016}px)`;
-        ctx.fillStyle=hexA('#8A6A60', .20*kE);
+        ctx.filter=`blur(${faceW*.015}px)`;
+        ctx.fillStyle=hexA('#8A6A60', .24*kE);
         for(const E of [EYE_L,EYE_R]){
           const b=P(E.bottom), inn=P(E.inner), out=P(E.outer);
-          const cx=b.x+(out.x-inn.x)*.22, cy=b.y+faceW*.010;
-          ctx.beginPath(); ctx.ellipse(cx,cy, dist(inn,out)*.34, faceW*.011, 0,0,7); ctx.fill();
-        }
-      });
-      layer(ctx=>{
-        ctx.globalCompositeOperation='soft-light';
-        ctx.filter=`blur(${faceW*.012}px)`;
-        ctx.fillStyle=hexA('#FFFFFF', .30*kE);
-        for(const E of [EYE_L,EYE_R]){
-          const p=P(E.inner);
-          ctx.beginPath(); ctx.arc(p.x,p.y, faceW*.017, 0,7); ctx.fill();
+          const cx=b.x+(out.x-inn.x)*.24, cy=b.y+faceW*.011;
+          ctx.beginPath(); ctx.ellipse(cx,cy, dist(inn,out)*.36, faceW*.012, 0,0,7); ctx.fill();
         }
       });
     }
@@ -932,28 +1033,43 @@ function render(){
     for(const E of [EYE_L,EYE_R]){
       const b=P(E.bottom), inn=P(E.inner), out=P(E.outer);
       const cx=(inn.x+out.x)/2, cy=b.y+faceW*.022;
-      ctx.fillStyle=hexA('#FFFFFF', aegyo*kG);
+      ctx.fillStyle=hexA('#FFF8F2', aegyo*.8*kG);
       ctx.beginPath(); ctx.ellipse(cx,cy,dist(inn,out)*.42,faceW*.018,0,0,7); ctx.fill();
     }
   });
 
   // --- Glow según acabado de piel ---
+  // Sin trazos duros: el brillo se construye con manchas radiales difusas que
+  // se desvanecen por completo en los bordes, como la luz sobre la piel.
   const glow=SKIN_FINISHES[S.skinFinish].glow;
   if(glow>0){
     const glowDraw=(ctx,a)=>{
-      const spots=[[P(CHEEKBONE_L),faceW*.10],[P(CHEEKBONE_R),faceW*.10],
-        [P(FOREHEAD),faceW*.13],[P(NOSE_TIP),faceW*.06],[P(CHIN),faceW*.07],[P(LIP_TOP),faceW*.035]];
-      const nt=P(NOSE_TOP),np=P(NOSE_TIP);
-      ctx.strokeStyle=hexA('#FFFFFF',a*.9);
-      ctx.lineWidth=faceW*.03; ctx.lineCap='round';
-      ctx.beginPath(); ctx.moveTo(nt.x,nt.y); ctx.lineTo(np.x,np.y); ctx.stroke();
-      for(const [p,rr] of spots){
-        ctx.fillStyle=radial(ctx,p.x,p.y,rr,'#FFFFFF',a);
+      const nt=P(NOSE_TOP), np=P(NOSE_TIP);
+      // puente de nariz: cadena de manchas que se afinan, nunca una línea
+      const pasos=6;
+      for(let i=0;i<=pasos;i++){
+        const t=i/pasos;
+        const x=nt.x+(np.x-nt.x)*t, y=nt.y+(np.y-nt.y)*t;
+        const rr=faceW*(.030 - .012*Math.abs(t-.45)*2);   // más ancho al medio
+        const fade=Math.sin(Math.PI*t);                    // se apaga en los extremos
+        ctx.fillStyle=radial(ctx,x,y,rr,'#FFFFFF', a*.55*fade);
+        ctx.beginPath(); ctx.arc(x,y,rr,0,7); ctx.fill();
+      }
+      const spots=[
+        [P(CHEEKBONE_L), faceW*.11, 1],
+        [P(CHEEKBONE_R), faceW*.11, 1],
+        [P(FOREHEAD),    faceW*.14, .55],
+        [P(NOSE_TIP),    faceW*.045,.55],
+        [P(CHIN),        faceW*.07, .6],
+        [P(LIP_TOP),     faceW*.030,.7],
+      ];
+      for(const [p,rr,w] of spots){
+        ctx.fillStyle=radial(ctx,p.x,p.y,rr,'#FFFFFF', a*w);
         ctx.beginPath(); ctx.arc(p.x,p.y,rr,0,7); ctx.fill();
       }
     };
-    layer(ctx=>{ ctx.globalCompositeOperation='soft-light'; ctx.filter=`blur(${faceW*.05}px)`; glowDraw(ctx,glow*kG); });
-    layer(ctx=>{ ctx.globalCompositeOperation='screen'; ctx.filter=`blur(${faceW*.06}px)`; glowDraw(ctx,glow*kG*.22); });
+    layer(ctx=>{ ctx.globalCompositeOperation='soft-light'; ctx.filter=`blur(${faceW*.055}px)`; glowDraw(ctx,glow*kG); });
+    layer(ctx=>{ ctx.globalCompositeOperation='screen';     ctx.filter=`blur(${faceW*.075}px)`; glowDraw(ctx,glow*kG*.14); });
   }
 }
 function layer(fn){ ctxA.save(); fn(ctxA); ctxA.restore(); }
