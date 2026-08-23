@@ -75,9 +75,12 @@
   .btn:active{transform:scale(.97);}
   .btn:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
 
+  /* La foto se limita en alto para que en móvil siempre asome el contenido
+     siguiente: si ocupa toda la pantalla, el usuario cree que ahí termina. */
   .compare{position:relative; width:100%; display:none; touch-action:none;}
-  .compare canvas{display:block; width:100%; height:auto;}
-  #canvasAfter{position:absolute; inset:0; clip-path:inset(0 0 0 50%);}
+  .compare canvas{display:block; width:100%; height:auto; max-height:52vh; object-fit:contain;}
+  #canvasAfter{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; clip-path:inset(0 0 0 50%);}
+  @media (max-height:700px){ .compare canvas{max-height:44vh;} }
   .divider{
     position:absolute; top:0; bottom:0; left:50%; width:2px; background:#fff;
     box-shadow:0 0 8px rgba(0,0,0,.35); cursor:ew-resize;
@@ -93,6 +96,16 @@
     background:rgba(51,47,69,.55); color:#fff; padding:4px 10px; border-radius:999px;
   }
   .taglabel.antes{left:10px;} .taglabel.despues{right:10px;}
+  .scrollcue{
+    display:none; width:100%; border:none; border-top:1px solid var(--line);
+    background:var(--blanco); color:#5F58A0; font-family:inherit; font-size:12.5px;
+    letter-spacing:.06em; padding:11px 12px; cursor:pointer;
+    align-items:center; justify-content:center; gap:8px;
+  }
+  .scrollcue.show{display:flex;}
+  .scrollcue .arrow{font-size:15px; line-height:1; animation:bob 1.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(-1px);}50%{transform:translateY(3px);}}
+  @media (prefers-reduced-motion: reduce){ .scrollcue .arrow{animation:none;} }
   video{width:100%; display:none;}
   .loading{
     position:absolute; inset:0; display:none; align-items:center; justify-content:center;
@@ -283,6 +296,10 @@
       <span class="taglabel antes">ANTES</span>
       <span class="taglabel despues">DESPUÉS</span>
     </div>
+
+    <button class="scrollcue" id="scrollcue" type="button" aria-label="Ver el análisis y las opciones">
+      <span>Tu análisis y opciones</span><span class="arrow" aria-hidden="true">⌄</span>
+    </button>
 
     <div class="loading" id="loading">
       <div class="sparkle">✦</div>
@@ -656,7 +673,9 @@ function onResults(res){
   renderAnalysis(); buildAllChips(); renderProducts(); render();
   setSplit(50);           // mitad y mitad: el antes/después se compara de un vistazo
   showToast(`Listo · look ${LOOKS[reco.look].name}`);
-  compare.scrollIntoView({behavior:'smooth', block:'center'});
+  $('scrollcue').classList.add('show');
+  // 'start' en vez de 'center': la foto queda arriba y el análisis asoma debajo
+  compare.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 // ---------- Utilidades ----------
@@ -1233,6 +1252,17 @@ window.addEventListener('pointermove',e=>{if(dragging) dragMove(e.clientX);});
 window.addEventListener('pointerup',()=>dragging=false);
 
 // ---------- Acciones ----------
+$('scrollcue').onclick=()=>{
+  document.querySelector('#controls .section-label').scrollIntoView({behavior:'smooth', block:'start'});
+};
+// El indicador se oculta en cuanto el usuario ya bajó por su cuenta
+window.addEventListener('scroll', ()=>{
+  const cue=$('scrollcue');
+  if(cue.classList.contains('show') && controls.getBoundingClientRect().top < innerHeight*.75){
+    cue.classList.remove('show');
+  }
+}, {passive:true});
+
 $('btnDownload').onclick=()=>{
   const a=document.createElement('a');
   a.download='aurak-makeup.png';
@@ -1240,7 +1270,7 @@ $('btnDownload').onclick=()=>{
   a.click();
   showToast('Imagen descargada');
 };
-$('btnReset').onclick=()=>{ resetToDrop(); compare.style.display='none'; controls.style.display='none'; };
+$('btnReset').onclick=()=>{ resetToDrop(); compare.style.display='none'; controls.style.display='none'; $('scrollcue').classList.remove('show'); scrollTo({top:0,behavior:'smooth'}); };
 
 function resetToDrop(){ dropzone.style.display='block'; fileInput.value=''; }
 let toastTimer=null;
