@@ -250,12 +250,12 @@
 </head>
 <body>
 <header>
-  <a class="home" href="https://www.aurak.app" aria-label="Ir a Aura-K">
+  <a class="home" href="https://www.aurak.app/?from=makeup" aria-label="Ir a Aura-K">
     <div class="eyebrow">K-BEAUTY</div>
     <div class="wordmark">AURA-K <span class="spark">✦</span></div>
   </a>
   <div class="sub">MAKEUP STUDIO</div>
-  <a class="crosslink" href="https://www.aurak.app">Analizar mi piel en Aura-K →</a>
+  <a class="crosslink" href="https://www.aurak.app/?from=makeup">Analizar mi piel en Aura-K →</a>
 </header>
 
 <main>
@@ -393,7 +393,7 @@
     </p>
 
     <div class="sitefoot">
-      <a href="https://www.aurak.app">AURA-K ✦</a>
+      <a href="https://www.aurak.app/?from=makeup">AURA-K ✦</a>
       <p>El maquillaje luce mejor sobre una piel cuidada.<br>
       Descubre tu rutina coreana con el análisis de piel en aurak.app</p>
     </div>
@@ -539,6 +539,26 @@ const PRODUCTS=[
    pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
    intl:'https://www.yesstyle.com/en/clio-prism-air-highlighter-4-colors-04-pink-sparkling/info.html/pid.1067975890'},
 ];
+
+// ---------- Contador de visitas (centralizado en aurak.app) ----------
+// Registra la visita en el mismo endpoint que usa la landing, etiquetada como
+// 'makeup' para poder separarlas en el panel. Si falla, la app sigue igual:
+// el tracking nunca debe romper la experiencia.
+(function track(){
+  try{
+    const params=new URLSearchParams(location.search);
+    // de dónde llegó: ?from=aurak si vino de la landing, si no el referrer
+    const from = params.get('from')
+      || (document.referrer.includes('aurak.app') ? 'aurak' : '')
+      || 'directo';
+    fetch('https://www.aurak.app/api/track', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({src:'makeup', from}),
+      keepalive:true
+    }).catch(()=>{});
+  }catch(e){}
+})();
 
 // ---------- Estado ----------
 let landmarks=null, baseImg=null, stream=null, analysis=null;
