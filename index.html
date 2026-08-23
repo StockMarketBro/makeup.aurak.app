@@ -359,7 +359,7 @@ const FACE_L=234, FACE_R=454, JAW_L=172, JAW_R=397;
 
 // ---------- Opciones por zona ----------
 const LOOKS={
-  idol:{name:'Idol K-pop ✦', dot:'#C63A55', set:{lipStyle:'gradient', lipColor:'#C63A55', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EE8AA0',alpha:.42}, glow:.55, aegyo:.32}},
+  idol:{name:'Idol K-pop ✦', dot:'#CC5566', set:{lipStyle:'gradient', lipColor:'#CC5566', skinFinish:'dewy', shadow:'rosa', liner:'idol', brow:'castano', blush:{color:'#EFA0AC',alpha:.26}, glow:.34, aegyo:.20}},
   natural:{name:'Natural diario', dot:'#C4707A', set:{lipStyle:'mlbb', lipColor:'#C4707A', skinFinish:'dewy', shadow:'durazno', liner:'none', brow:'castano', blush:{color:'#EFA6A0',alpha:.30}, glow:.28, aegyo:.16}},
   gradient:{name:'Gradient lips', dot:'#D64550', set:{lipStyle:'gradient', lipColor:'#D64550', skinFinish:'dewy', shadow:'durazno', liner:'puppy', brow:'castano', blush:{color:'#F0B2AC',alpha:.20}, glow:.24, aegyo:.12}},
   glass:{name:'Glass skin', dot:'#F3D8DF', set:{lipStyle:'mlbb', lipColor:'#D98A94', skinFinish:'glass', shadow:'none', liner:'none', brow:'gris', blush:{color:'#F2BEBE',alpha:.20}, glow:.60, aegyo:.22}},
@@ -372,20 +372,21 @@ const SKIN_FINISHES={
   matte:{name:'Mate suave', dot:'#E8DDD6', glow:0},
 };
 const SHADOWS={
-  durazno:{name:'Durazno', dot:'#E8A87C', color:'#DE9868', alpha:.26},
-  rosa:{name:'Rosa coreano', dot:'#D9A0A8', color:'#CE8890', alpha:.26},
-  tierra:{name:'Marrón tierra', dot:'#B08466', color:'#9E7050', alpha:.28},
-  malva:{name:'Malva', dot:'#A98BA4', color:'#997892', alpha:.26},
+  durazno:{name:'Durazno', dot:'#E8A87C', color:'#DE9868', alpha:.20},
+  rosa:{name:'Rosa coreano', dot:'#D9A0A8', color:'#CE8890', alpha:.20},
+  tierra:{name:'Marrón tierra', dot:'#B08466', color:'#9E7050', alpha:.22},
+  malva:{name:'Malva', dot:'#A98BA4', color:'#997892', alpha:.20},
   none:{name:'Sin sombra', dot:'#FFFFFF', color:null, alpha:0},
 };
 const LINERS={
+  idol:{name:'Idol (adaptativo)'},
   puppy:{name:'Puppy liner'},
   classic:{name:'Almendrado'},
   none:{name:'Sin delineado'},
 };
 const BROWS={
-  castano:{name:'Castaño', dot:'#6B4A38', color:'#5E4030', alpha:.30},
-  gris:{name:'Gris-marrón', dot:'#5C4F47', color:'#4E453E', alpha:.28},
+  castano:{name:'Castaño', dot:'#6B4A38', color:'#5E4030', alpha:.20},
+  gris:{name:'Gris-marrón', dot:'#5C4F47', color:'#4E453E', alpha:.19},
   none:{name:'Sin cambio', dot:'#FFFFFF', color:null, alpha:0},
 };
 const LIP_STYLES={
@@ -560,7 +561,7 @@ function onResults(res){
   computeReco();          // el mejor look posible (análisis + quiz)
   applyReco();            // se aplica de inmediato
   renderAnalysis(); buildAllChips(); renderProducts(); render();
-  setSplit(15);           // el DESPUÉS domina la vista apenas termina el análisis
+  setSplit(25);           // el DESPUÉS domina la vista apenas termina el análisis
   compare.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
@@ -611,6 +612,11 @@ function analyzeFace(){
   const inter=dist(P(EYE_L.inner),P(EYE_R.inner));
   const eyeW=dist(P(EYE_L.outer),P(EYE_L.inner));
   const eyes= inter>eyeW*1.28?'separados': inter<eyeW*.95?'juntos':'proporcionados';
+  // Apertura del ojo (alto/ancho): decide si conviene agrandar o solo delinear
+  const apert=((dist(P(EYE_L.top),P(EYE_L.bottom))/dist(P(EYE_L.outer),P(EYE_L.inner)))
+             +(dist(P(EYE_R.top),P(EYE_R.bottom))/dist(P(EYE_R.outer),P(EYE_R.inner))))/2;
+  const eyeSize= apert>=.36?'grandes': apert<=.28?'pequeños':'medios';
+  const linerMode= eyeSize==='grandes'?'solo-delineado':'agrandar';
 
   const tips=[];
   tips.push(`Piel ${depth} de subtono ${undertoneTxt}: te favorecen los ${undertone==='warm'?'corales, duraznos y terracotas':undertone==='cool'?'rosas, berries y rojos azulados':'rosas té, malvas y corales suaves'}.`);
@@ -622,9 +628,10 @@ function analyzeFace(){
   else tips.push('Labios medios: puedes alternar entre gradient y color completo según la ocasión.');
   if(eyes==='juntos') tips.push('Ilumina el lagrimal y concentra sombra y delineado en el tercio externo del ojo.');
   else if(eyes==='separados') tips.push('Concentra la sombra hacia el lagrimal para equilibrar la mirada.');
-  else tips.push('El puppy liner —delineado que sigue la caída natural del ojo— da la mirada tierna típica coreana.');
+  if(linerMode==='agrandar') tips.push('Ojos '+eyeSize+': delineado ajustado a la línea de pestañas, un poco de sombra bajo el párpado inferior y luz en el lagrimal abren la mirada sin que se note maquillaje encima.');
+  else tips.push('Ojos grandes: con un delineado limpio que siga tu línea natural es suficiente; recargar solo los achica.');
 
-  return {depth, undertone, undertoneTxt, shape, lips, eyes, tips, faceW};
+  return {depth, undertone, undertoneTxt, shape, lips, eyes, eyeSize, linerMode, tips, faceW};
 }
 
 // ---------- Recomendación (análisis + quiz) ----------
@@ -638,7 +645,7 @@ function computeReco(){
   if(quiz.vibe==='fresco'){ look='glass'; why='la base luminosa del look idol, en versión fresca'; }
   if(quiz.vibe==='dulce'){ look='peach'; why='la versión dulce del look idol, en tonos durazno'; }
   if(quiz.vibe==='atrevido'||quiz.ocasion==='noche'||quiz.ocasion==='evento'){ look='idol'; why='look idol completo, de escenario'; }
-  if(quiz.intensidad==='sutil'&&look==='idol'){ look='gradient'; why='look idol en versión sutil'; }
+  if(quiz.intensidad==='sutil'&&look==='idol'){ look='natural'; why='look idol en versión sutil'; }
 
   const set=JSON.parse(JSON.stringify(LOOKS[look].set));
   // Color de labios afinado por subtono
@@ -646,7 +653,7 @@ function computeReco(){
   if(look!=='douyin'&&look!=='idol') set.lipColor=recColor.hex;
   if(look==='idol') set.lipColor= A.undertone==='warm'?'#D0403A': A.undertone==='cool'?'#B82D4B':'#C63A55';
   // Intensidad del quiz (por defecto, marcada: que el cambio se note)
-  const k= quiz.intensidad==='sutil'?75: quiz.intensidad==='media'?110:140;
+  const k= quiz.intensidad==='sutil'?70: quiz.intensidad==='marcada'?125:100;
 
   reco={look, set, k, recColor,
     texto:`Te sugerimos <b>${LOOKS[look].name}</b> ${why}, con labios en <b>${recColor.name.toLowerCase()}</b>` +
@@ -748,7 +755,7 @@ function render(){
     }
   };
   layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${faceW*.045}px)`; blushDraw(ctx,S.blush.alpha*kB); });
-  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${faceW*.05}px)`; blushDraw(ctx,S.blush.alpha*kB*.5); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${faceW*.05}px)`; blushDraw(ctx,S.blush.alpha*kB*.42); });
 
   // --- Sombra de ojos ---
   const SH=SHADOWS[S.shadow];
@@ -769,36 +776,69 @@ function render(){
     });
   }
 
-  // --- Delineado ---
+  // --- Delineado (adaptativo según la apertura del ojo) ---
   if(S.liner!=='none'){
+    // 'idol' se adapta: agranda si el ojo es pequeño/medio, solo delinea si es grande
+    const agrandar = S.liner==='idol' && analysis && analysis.linerMode==='agrandar';
+    const wingAng  = S.liner==='classic'? -0.28 : S.liner==='idol'? -0.12 : 0.10;
+    const wingLen  = faceW*(S.liner==='classic'?.032 : S.liner==='idol'? (agrandar?.026:.018) : .026);
+    const thick    = S.liner==='idol'? (agrandar?.0060:.0045) : .0065;
+
     layer(ctx=>{
       ctx.globalCompositeOperation='multiply';
-      ctx.filter='blur(1px)';
-      ctx.strokeStyle=hexA('#33231F', .85*kE);
+      ctx.filter=`blur(${Math.max(1, faceW*.0025)}px)`;
+      ctx.strokeStyle=hexA('#3B2A24', .62*kE);
       ctx.lineCap='round'; ctx.lineJoin='round';
-      ctx.lineWidth=Math.max(1.8, faceW*.008);
       for(const LID of [LID_L,LID_R]){
-        // línea sobre las pestañas superiores
-        ctx.beginPath();
-        LID.forEach((idx,i)=>{
-          const p=P(idx); const y=p.y - faceW*.003;
-          i===0?ctx.moveTo(p.x,y):ctx.lineTo(p.x,y);
-        });
-        ctx.stroke();
-        // wing
+        // línea superior: más gruesa hacia el exterior, casi invisible en el lagrimal
+        for(let i=0;i<LID.length-1;i++){
+          const a=P(LID[i]), b=P(LID[i+1]);
+          const t=i/(LID.length-2);                        // 0 interno → 1 externo
+          ctx.lineWidth=Math.max(1, faceW*thick*(0.45+0.85*t));
+          ctx.globalAlpha=0.55+0.45*t;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y-faceW*.002);
+          ctx.lineTo(b.x, b.y-faceW*.002);
+          ctx.stroke();
+        }
+        ctx.globalAlpha=1;
+        // extensión externa: corta y en la dirección natural del ojo
         const inn=P(LID[0]), out=P(LID[LID.length-1]);
         let dx=out.x-inn.x, dy=out.y-inn.y;
         const len=Math.hypot(dx,dy); dx/=len; dy/=len;
-        const ang= S.liner==='classic'? -0.30 : 0.10;   // clásico sube, puppy sigue la caída
-        const ca=Math.cos(ang), sa=Math.sin(ang);
+        const ca=Math.cos(wingAng), sa=Math.sin(wingAng);
         const wx=dx*ca - dy*sa, wy=dx*sa + dy*ca;
-        const wl=faceW*(S.liner==='classic'?.035:.028);
+        ctx.lineWidth=Math.max(1, faceW*thick);
         ctx.beginPath();
-        ctx.moveTo(out.x,out.y - faceW*.003);
-        ctx.lineTo(out.x+wx*wl, out.y - faceW*.003 + wy*wl);
+        ctx.moveTo(out.x, out.y-faceW*.002);
+        ctx.lineTo(out.x+wx*wingLen, out.y-faceW*.002+wy*wingLen);
         ctx.stroke();
       }
     });
+
+    // Efecto de ojo agrandado (solo si hace falta): sombra difusa bajo la línea
+    // inferior externa + luz en el lagrimal. Sutil, sin que se note maquillaje.
+    if(agrandar){
+      layer(ctx=>{
+        ctx.globalCompositeOperation='multiply';
+        ctx.filter=`blur(${faceW*.016}px)`;
+        ctx.fillStyle=hexA('#8A6A60', .20*kE);
+        for(const E of [EYE_L,EYE_R]){
+          const b=P(E.bottom), inn=P(E.inner), out=P(E.outer);
+          const cx=b.x+(out.x-inn.x)*.22, cy=b.y+faceW*.010;
+          ctx.beginPath(); ctx.ellipse(cx,cy, dist(inn,out)*.34, faceW*.011, 0,0,7); ctx.fill();
+        }
+      });
+      layer(ctx=>{
+        ctx.globalCompositeOperation='soft-light';
+        ctx.filter=`blur(${faceW*.012}px)`;
+        ctx.fillStyle=hexA('#FFFFFF', .30*kE);
+        for(const E of [EYE_L,EYE_R]){
+          const p=P(E.inner);
+          ctx.beginPath(); ctx.arc(p.x,p.y, faceW*.017, 0,7); ctx.fill();
+        }
+      });
+    }
   }
 
   // --- Cejas ---
@@ -816,7 +856,7 @@ function render(){
 
   // --- Labios ---
   const LS=LIP_STYLES[S.lipStyle];
-  const lipAlphaBase=.62*LS.mult;
+  const lipAlphaBase=.55*LS.mult;
   const lipDraw=(ctx,a)=>{
     const mTop=P(13),mBot=P(14);
     const cx=(mTop.x+mBot.x)/2, cy=(mTop.y+mBot.y)/2;
@@ -829,10 +869,10 @@ function render(){
     ctx.fill('evenodd');
   };
   layer(ctx=>{ ctx.globalCompositeOperation='multiply'; ctx.filter=`blur(${Math.max(1.5,faceW*.006)}px)`; lipDraw(ctx,lipAlphaBase*kL); });
-  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.45); });
+  layer(ctx=>{ ctx.globalCompositeOperation='source-over'; ctx.filter=`blur(${Math.max(1.5,faceW*.008)}px)`; lipDraw(ctx,lipAlphaBase*kL*.35); });
 
   // --- Aegyo sal ---
-  const aegyo= S.look==='douyin'?.32:.16;
+  const aegyo= (S.aegyo!==undefined? S.aegyo : .16);
   layer(ctx=>{
     ctx.globalCompositeOperation='soft-light';
     ctx.filter=`blur(${faceW*.02}px)`;
