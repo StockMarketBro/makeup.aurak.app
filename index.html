@@ -282,6 +282,9 @@
   }
   .morestores a:active{background:var(--lavanda-bruma);}
   .morestores a::after{content:'→'; color:var(--lavanda);}
+  .morestores a small{display:block; font-size:10.5px; color:var(--tinta-media); margin-top:2px;}
+  .morestores a{flex-wrap:wrap;}
+  .morestores a > small{flex-basis:100%; order:3;}
 
   .note{margin-top:16px; font-size:11.5px; color:var(--tinta-media); text-align:center; line-height:1.55;}
   .toast{
@@ -548,70 +551,163 @@ const LIP_COLORS=[
   {hex:'#DD8B6A', name:'Durazno', tone:'warm'},
 ];
 
-// ---------- Catálogo con LINKS DIRECTOS (verificados) ----------
-// Afiliados: cuando tengas tu código YesStyle/afiliado local, agrega el parámetro aquí.
-const AFF='';  // ej: '?rco=TUCODIGO'
+// ================= TIENDAS Y CATÁLOGO =================
+// CRITERIOS DE ORDEN (aplicados en este orden, ver elegirTiendas):
+//   1. Prioridad manual — para dar preferencia a una tienda con la que ya
+//      cerraste acuerdo de afiliado. Se configura en `prioridad` de cada tienda.
+//   2. Link directo al producto por encima de link al catálogo — es lo que más
+//      mueve la conversión: si el usuario cae en la home y tiene que buscar, se pierde.
+//   3. Rotación semanal entre las tiendas restantes — reparte la exposición y
+//      genera datos comparativos de clics para negociar con cada una.
+//   4. Precio, si está cargado (desactivado por defecto: ver USAR_PRECIO).
+//   5. Locales antes que internacionales, por costo y tiempo de envío a Perú.
+
+// Ordenar por precio requiere mantener los precios a mano, porque ninguna
+// tienda peruana expone API ni feed. Con precios desactualizados el usuario
+// llega y encuentra otro monto, que es peor que no ordenar. Actívalo solo
+// cuando tengas una lista que puedas refrescar cada mes.
+const USAR_PRECIO = false;
+
+const TIENDAS = {
+  // --- Perú ---
+  asianshop:   {nom:'Asian Shop',       zona:'pe',   web:'https://asianshop.com.pe',
+                buscar:q=>`https://asianshop.com.pe/?s=${encodeURIComponent(q)}&post_type=product`, prioridad:0},
+  kbcorner:    {nom:'K-Beauty Corner',  zona:'pe',   web:'https://kbeautycorner.com',
+                buscar:q=>`https://kbeautycorner.com/?s=${encodeURIComponent(q)}&post_type=product`, prioridad:0},
+  topbeauty:   {nom:'TopBeauty',        zona:'pe',   web:'https://topbeauty.pe',
+                buscar:q=>`https://topbeauty.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  newseoul:    {nom:'NewSeoul',         zona:'pe',   web:'https://newseoul.com.pe',
+                buscar:q=>`https://newseoul.com.pe/?s=${encodeURIComponent(q)}&post_type=product`, prioridad:0},
+  kumi:        {nom:'Kumi Korean Shop', zona:'pe',   web:'https://kumikoreanshop.com',
+                buscar:q=>`https://kumikoreanshop.com/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  beautyholics:{nom:'Beautyholics',     zona:'pe',   web:'https://beautyholicsshop.com',
+                buscar:q=>`https://beautyholicsshop.com/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  miabeauty:   {nom:'Mia Beauty Bar',   zona:'pe',   web:'https://miabeautybar.pe',
+                buscar:q=>`https://miabeautybar.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  miu:         {nom:'Miu K-Beauty',     zona:'pe',   web:'https://miu.pe',
+                buscar:q=>`https://miu.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  // --- Internacionales ---
+  yesstyle:    {nom:'YesStyle',         zona:'intl', web:'https://www.yesstyle.com',
+                buscar:q=>`https://www.yesstyle.com/en/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  stylevana:   {nom:'Stylevana',        zona:'intl', web:'https://www.stylevana.com',
+                buscar:q=>`https://www.stylevana.com/en_US/catalogsearch/result/?q=${encodeURIComponent(q)}`, prioridad:0},
+  oliveyoung:  {nom:'Olive Young',      zona:'intl', web:'https://global.oliveyoung.com',
+                buscar:q=>`https://global.oliveyoung.com/display/search?query=${encodeURIComponent(q)}`, prioridad:0},
+};
+
+// Código de afiliado por tienda: se añade al link cuando lo tengas.
+// Ej: yesstyle:'?rco=TUCODIGO'  ·  asianshop:'?ref=aurak'
+const AFILIADO = {};
+
+// Catálogo. `directo` guarda las URLs de ficha de producto verificadas; para el
+// resto de tiendas se usa su buscador, que es mejor que mandar a la home.
+// `precio` es opcional (soles para Perú); solo se usa si USAR_PRECIO es true.
 const PRODUCTS=[
   {zone:'Labios', cat:'TINTE DE LABIOS', name:'Rom&nd · The Juicy Lasting Tint',
+   q:'romand juicy lasting tint',
    tones:{warm:'#09 Litchi Coral / #23 Nucadamia', cool:'#25 Bare Grape / #12 Cherry Bomb', neutral:'#06 Figfig / #01 Pomelo Skin'},
    cond:s=>true,
-   pe:'https://asianshop.com.pe/producto/romand-juicy-lasting-tint-sparkling-series/',
-   intl:'https://www.yesstyle.com/en/romand-the-juicy-lasting-tint-23-colors-01-pomelo-skin/info.html/pid.1134228333'},
+   directo:{
+     asianshop:'https://asianshop.com.pe/producto/romand-juicy-lasting-tint-sparkling-series/',
+     yesstyle:'https://www.yesstyle.com/en/romand-the-juicy-lasting-tint-23-colors-01-pomelo-skin/info.html/pid.1134228333',
+   },
+   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Labios', cat:'TINTE VELVET (GRADIENT)', name:'Peripera · Ink Velvet',
+   q:'peripera ink velvet',
    tones:{warm:'#33 Pure Red', cool:'#08 Sellout Red', neutral:'#25 Cinnamon Nude'},
-   cond:s=>s.lipStyle==='gradient'||s.look==='douyin',
-   pe:'https://asianshop.com.pe/tienda/',
-   intl:'https://www.yesstyle.com/en/peripera-ink-velvet-31-colors-19-love-sniper-red/info.html/pid.1057853640'},
+   cond:s=>s.lipStyle==='gradient'||s.look==='idol',
+   directo:{
+     yesstyle:'https://www.yesstyle.com/en/peripera-ink-velvet-31-colors-19-love-sniper-red/info.html/pid.1057853640',
+   },
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','beautyholics','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Labios', cat:'PREPARACIÓN DE LABIOS', name:'Laneige · Lip Sleeping Mask',
+   q:'laneige lip sleeping mask',
    tones:null,
    cond:s=>s.lipStyle==='gradient',
-   pe:'https://asianshop.com.pe/tienda/',
-   intl:'https://www.yesstyle.com/en/laneige-lip-sleeping-mask-ex-berry-new-mint-choco-ex/info.html/pid.1039417845'},
+   directo:{
+     yesstyle:'https://www.yesstyle.com/en/laneige-lip-sleeping-mask-ex-berry-new-mint-choco-ex/info.html/pid.1039417845',
+   },
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','miu','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Piel', cat:'CUSHION', name:'TIRTIR · Mask Fit Red Cushion',
+   q:'tirtir mask fit red cushion',
    tones:{warm:'#23N Sand / #21W', cool:'#21N Ivory / #17C', neutral:'#21N–#23N'},
    cond:s=>true,
-   pe:'https://asianshop.com.pe/tienda/',
-   intl:'https://www.yesstyle.com/en/tirtir-mask-fit-red-cushion-40-colors-55n-espresso/info.html/pid.1117014693'},
+   directo:{
+     yesstyle:'https://www.yesstyle.com/en/tirtir-mask-fit-red-cushion-40-colors-55n-espresso/info.html/pid.1117014693',
+   },
+   tiendas:['kbcorner','asianshop','topbeauty','newseoul','kumi','beautyholics','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Piel', cat:'ESENCIA', name:'COSRX · Advanced Snail 96 Mucin',
+   q:'cosrx snail 96 mucin essence',
    tones:null,
    cond:s=>s.skinFinish!=='matte',
-   pe:'https://asianshop.com.pe/marca/cosrx/',
-   intl:'https://www.yesstyle.com/en/cosrx-advanced-snail-96-mucin-power-essence-100ml/info.html/pid.1052684695'},
+   directo:{
+     asianshop:'https://asianshop.com.pe/marca/cosrx/',
+     yesstyle:'https://www.yesstyle.com/en/cosrx-advanced-snail-96-mucin-power-essence-100ml/info.html/pid.1052684695',
+   },
+   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miu','miabeauty','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Piel', cat:'SÉRUM GLOW', name:'Beauty of Joseon · Glow Serum',
+   q:'beauty of joseon glow serum propolis',
    tones:null,
    cond:s=>s.skinFinish==='glass',
-   pe:'https://asianshop.com.pe/tienda/',
-   intl:'https://www.yesstyle.com/en/beauty-of-joseon-glow-serum-30ml/info.html/pid.1089210994'},
+   directo:{
+     yesstyle:'https://www.yesstyle.com/en/beauty-of-joseon-glow-serum-30ml/info.html/pid.1089210994',
+   },
+   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miu','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Rubor', cat:'RUBOR', name:'Peripera · Pure Blushed Sunshine Cheek',
+   q:'peripera pure blushed sunshine cheek',
    tones:{warm:'#03 Coral / #12 Apricot', cool:'#02 Pink', neutral:'#12 Apricot'},
    cond:s=>true,
-   pe:'https://asianshop.com.pe/producto/peripera-pure-blushed-sunshine-cheek/',
-   intl:'https://www.yesstyle.com/en/peripera/list.html/bpt.299_bid.313728'},
+   directo:{
+     asianshop:'https://asianshop.com.pe/producto/peripera-pure-blushed-sunshine-cheek/',
+   },
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Rubor', cat:'RUBOR (ALTERNATIVA)', name:'Rom&nd · Better Than Cheek',
+   q:'romand better than cheek',
    tones:{warm:'#07 Pear Chip / #02 Mango', cool:'#03 Blueberry / #01 Prune', neutral:'#04 Pinkcoat'},
    cond:s=>true,
-   pe:'https://asianshop.com.pe/tienda/',
-   intl:'https://www.yesstyle.com/en/romand-better-than-cheek-new-9-colors-c04-pear-chip/info.html/pid.1117526059'},
+   directo:{
+     yesstyle:'https://www.yesstyle.com/en/romand-better-than-cheek-new-9-colors-c04-pear-chip/info.html/pid.1117526059',
+   },
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','beautyholics','yesstyle','stylevana']},
+
   {zone:'Ojos', cat:'PALETA DE SOMBRAS', name:'Rom&nd · Better Than Palette',
+   q:'romand better than palette',
    tones:{warm:'#08 Peach Dahlia Garden', cool:'Rose / Mauve tones', neutral:'#08 Peach Dahlia Garden'},
    cond:s=>s.shadow!=='none',
-   pe:'https://asianshop.com.pe/producto/romand-better-than-palette-08-peach-dahlia-garden/',
-   intl:'https://www.yesstyle.com/en/romand/list.html/bpt.299_bid.322521'},
+   directo:{
+     asianshop:'https://asianshop.com.pe/producto/romand-better-than-palette-08-peach-dahlia-garden/',
+   },
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','beautyholics','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Ojos', cat:'DELINEADOR', name:'Clio · Sharp Liner (Kill series)',
+   q:'clio sharp liner',
    tones:{warm:'Marrón cacao', cool:'Negro / gris', neutral:'Marrón oscuro'},
    cond:s=>s.liner!=='none',
-   pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
-   intl:'https://www.yesstyle.com/en/clio/list.html/bpt.299_bid.314578'},
+   directo:{},
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','yesstyle','stylevana','oliveyoung']},
+
   {zone:'Cejas', cat:'CEJAS', name:'Lápiz / sombra de cejas K-beauty',
+   q:'lapiz de cejas coreano',
    tones:{warm:'Castaño cálido', cool:'Gris-marrón', neutral:'Castaño medio'},
    cond:s=>s.brow!=='none',
-   pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
-   intl:'https://www.yesstyle.com/en/romand/list.html/bpt.299_bid.322521'},
+   directo:{},
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','yesstyle','stylevana']},
+
   {zone:'Brillo', cat:'ILUMINADOR', name:'Clio · Prism Air Highlighter',
+   q:'clio prism air highlighter',
    tones:{warm:'#01 Gold Sheer', cool:'#02 Fairy Pink', neutral:'#01 Gold Sheer'},
    cond:s=>s.skinFinish!=='matte',
-   pe:'https://asianshop.com.pe/producto-categoria/make-up/ojos/',
-   intl:'https://www.yesstyle.com/en/clio-prism-air-highlighter-4-colors-04-pink-sparkling/info.html/pid.1067975890'},
+   directo:{
+     yesstyle:'https://www.yesstyle.com/en/clio-prism-air-highlighter-4-colors-04-pink-sparkling/info.html/pid.1067975890',
+   },
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','yesstyle','stylevana','oliveyoung']},
 ];
 
 // ---------- Contador de visitas (centralizado en aurak.app) ----------
@@ -1413,39 +1509,100 @@ function render(){
 function layer(fn){ ctxA.save(); fn(ctxA); ctxA.restore(); }
 
 // ---------- Productos ----------
-// Tiendas adicionales mostradas en el desplegable "+ tiendas" de cada producto.
-// Agrega aquí las demás tiendas locales (Top Beauty, Minna, New Seoul...) con
-// sus URLs, y reemplaza por links directos al producto cuando los tengas.
-const EXTRA_STORES=[
-  {n:'Mia Beauty Bar · Perú', u:'https://miabeautybar.pe/'},
-  {n:'K-Beauty Corner · Perú', u:'https://www.kbeautycorner.com/'},
-  {n:'Stylevana · Internacional', u:'https://www.stylevana.com/'},
-  {n:'Olive Young Global · Internacional', u:'https://global.oliveyoung.com/'},
-];
+// Semana ISO: la rotación cambia cada lunes. Al ser determinista, un mismo
+// usuario ve el mismo orden durante toda la semana (no baila entre recargas),
+// pero cada tienda pasa por el primer puesto a lo largo del tiempo.
+function semanaISO(){
+  const d=new Date();
+  const j=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  j.setUTCDate(j.getUTCDate() + 4 - (j.getUTCDay()||7));
+  const ini=new Date(Date.UTC(j.getUTCFullYear(),0,1));
+  return Math.ceil(((j-ini)/86400000 + 1)/7);
+}
+const ROT = semanaISO();
+
+// Devuelve las tiendas de un producto ya ordenadas según los criterios.
+function elegirTiendas(p){
+  const lista=(p.tiendas||[]).filter(id=>TIENDAS[id]).map((id,i)=>{
+    const t=TIENDAS[id];
+    const directo=(p.directo||{})[id];
+    return {
+      id, nom:t.nom, zona:t.zona,
+      url:(directo || t.buscar(p.q||p.name)) + (AFILIADO[id]||''),
+      directo:!!directo,
+      prioridad:t.prioridad||0,
+      precio:(p.precios||{})[id],
+      orden:i,
+    };
+  });
+
+  const puntua=(a,b)=>{
+    // 1. prioridad manual (acuerdos cerrados)
+    if(b.prioridad!==a.prioridad) return b.prioridad-a.prioridad;
+    // 2. link directo al producto antes que buscador
+    if(b.directo!==a.directo) return b.directo?1:-1;
+    // 4. precio, solo si está activado y ambos lo tienen cargado
+    if(USAR_PRECIO && a.precio!=null && b.precio!=null && a.precio!==b.precio)
+      return a.precio-b.precio;
+    // 3. rotación semanal entre las que quedan empatadas
+    const n=lista.length||1;
+    return ((a.orden+ROT)%n) - ((b.orden+ROT)%n);
+  };
+
+  const pe   = lista.filter(t=>t.zona==='pe').sort(puntua);
+  const intl = lista.filter(t=>t.zona==='intl').sort(puntua);
+  return {pe, intl, resto:[...pe.slice(1), ...intl.slice(1)]};   // 5. local primero
+}
+
+// Registra en qué tienda hace clic la gente: es el dato con el que después
+// se negocia comisión con cada una.
+function clicTienda(id, producto){
+  try{
+    fetch('https://www.aurak.app/api/track', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({src:'makeup', evento:'tienda', tienda:id, producto}),
+      keepalive:true
+    }).catch(()=>{});
+  }catch(e){}
+}
+
 function renderProducts(){
   const und=analysis?analysis.undertone:'neutral';
   const undTxt=analysis?analysis.undertoneTxt:'neutro';
-  $('products').innerHTML=PRODUCTS.filter(p=>p.cond(settings)).map((p,i)=>`
+  const lista=PRODUCTS.filter(p=>p.cond(settings));
+
+  $('products').innerHTML=lista.map((p,i)=>{
+    const {pe,intl,resto}=elegirTiendas(p);
+    const principal=[pe[0],intl[0]].filter(Boolean);
+    return `
     <div class="prod">
       <div class="cat">${p.cat}</div>
       <div class="name">${p.name}</div>
       ${p.tones?`<div class="tone">Para tu subtono ${undTxt}: ${p.tones[und]}</div>`:''}
       <div class="links">
-        <a class="pe" target="_blank" rel="noopener" href="${p.pe}${AFF}">Asian Shop · Perú</a>
-        <a class="intl" target="_blank" rel="noopener" href="${p.intl}${AFF}">YesStyle · Internacional</a>
+        ${principal.map(t=>`<a class="${t.zona==='pe'?'pe':'intl'}" target="_blank" rel="noopener"
+            data-tienda="${t.id}" data-prod="${p.name}" href="${t.url}">${t.nom}${t.zona==='pe'?' · Perú':''}</a>`).join('')}
       </div>
-      <button class="morebtn" data-more="${i}" aria-expanded="false">+ ${EXTRA_STORES.length} tiendas más</button>
+      ${resto.length?`
+      <button class="morebtn" data-more="${i}" aria-expanded="false">+ ${resto.length} tiendas más</button>
       <div class="morestores" id="more-${i}">
-        ${EXTRA_STORES.map(s=>`<a target="_blank" rel="noopener" href="${s.u}">${s.n}</a>`).join('')}
-      </div>
-    </div>`).join('');
+        ${resto.map(t=>`<a target="_blank" rel="noopener" data-tienda="${t.id}" data-prod="${p.name}"
+            href="${t.url}">${t.nom}<small>${t.zona==='pe'?'Perú':'Internacional'}${t.directo?' · ficha directa':''}</small></a>`).join('')}
+      </div>`:''}
+    </div>`;
+  }).join('');
+
   document.querySelectorAll('.morebtn').forEach(b=>{
     b.onclick=()=>{
       const box=$('more-'+b.dataset.more);
       const open=box.classList.toggle('open');
       b.setAttribute('aria-expanded',open);
-      b.textContent= open?'− Ocultar tiendas':`+ ${EXTRA_STORES.length} tiendas más`;
+      const n=box.querySelectorAll('a').length;
+      b.textContent= open?'− Ocultar tiendas':`+ ${n} tiendas más`;
     };
+  });
+  document.querySelectorAll('#products a[data-tienda]').forEach(a=>{
+    a.addEventListener('click', ()=>clicTienda(a.dataset.tienda, a.dataset.prod));
   });
 }
 
