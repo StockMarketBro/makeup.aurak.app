@@ -586,6 +586,10 @@ const TIENDAS = {
                 buscar:q=>`https://miabeautybar.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
   miu:         {nom:'Miu K-Beauty',     zona:'pe',   web:'https://miu.pe',
                 buscar:q=>`https://miu.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  minna:       {nom:'Minna',            zona:'pe',   web:'https://www.minna.pe',
+                buscar:q=>`https://www.minna.pe/buscar?q=${encodeURIComponent(q)}`, prioridad:0},
+  beautyaddicts:{nom:'Beauty Addicts',  zona:'pe',   web:'https://beautyaddicts.pe',
+                buscar:q=>`https://beautyaddicts.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
   // --- Internacionales ---
   yesstyle:    {nom:'YesStyle',         zona:'intl', web:'https://www.yesstyle.com',
                 buscar:q=>`https://www.yesstyle.com/en/search?q=${encodeURIComponent(q)}`, prioridad:0},
@@ -599,8 +603,11 @@ const TIENDAS = {
 // Ej: yesstyle:'?rco=TUCODIGO'  ·  asianshop:'?ref=aurak'
 const AFILIADO = {};
 
-// Catálogo. `directo` guarda las URLs de ficha de producto verificadas; para el
-// resto de tiendas se usa su buscador, que es mejor que mandar a la home.
+// Catálogo. En `directo` van SOLO fichas de producto verificadas una por una.
+// Si una tienda no tiene ficha confirmada, se deja fuera y cae en su buscador
+// con el término de `q`: es preferible un buscador con el producto ya escrito
+// que un link a una categoría o a la home, que se siente roto y no convierte.
+// Al agregar links nuevos, ábrelos antes: si no muestran el producto, no van aquí.
 // `precio` es opcional (soles para Perú); solo se usa si USAR_PRECIO es true.
 const PRODUCTS=[
   {zone:'Labios', cat:'TINTE DE LABIOS', name:'Rom&nd · The Juicy Lasting Tint',
@@ -608,7 +615,8 @@ const PRODUCTS=[
    tones:{warm:'#09 Litchi Coral / #23 Nucadamia', cool:'#25 Bare Grape / #12 Cherry Bomb', neutral:'#06 Figfig / #01 Pomelo Skin'},
    cond:s=>true,
    directo:{
-     asianshop:'https://asianshop.com.pe/producto/romand-juicy-lasting-tint-sparkling-series/',
+     asianshop:'https://asianshop.com.pe/producto/romand-juicy-lasting-tint/',
+     newseoul:'https://newseoul.com.pe/producto/romand-juicy-lasting-tint/',
      yesstyle:'https://www.yesstyle.com/en/romand-the-juicy-lasting-tint-23-colors-01-pomelo-skin/info.html/pid.1134228333',
    },
    tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','yesstyle','stylevana','oliveyoung']},
@@ -618,6 +626,8 @@ const PRODUCTS=[
    tones:{warm:'#33 Pure Red', cool:'#08 Sellout Red', neutral:'#25 Cinnamon Nude'},
    cond:s=>s.lipStyle==='gradient'||s.look==='idol',
    directo:{
+     asianshop:'https://asianshop.com.pe/producto/peripera-ink-velvet-tint/',
+     newseoul:'https://newseoul.com.pe/producto/peripera-ink-velvet/',
      yesstyle:'https://www.yesstyle.com/en/peripera-ink-velvet-31-colors-19-love-sniper-red/info.html/pid.1057853640',
    },
    tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','beautyholics','yesstyle','stylevana','oliveyoung']},
@@ -636,16 +646,20 @@ const PRODUCTS=[
    tones:{warm:'#23N Sand / #21W', cool:'#21N Ivory / #17C', neutral:'#21N–#23N'},
    cond:s=>true,
    directo:{
+     asianshop:'https://asianshop.com.pe/producto/tirtir-mask-fit-red-cushion/',
+     newseoul:'https://newseoul.com.pe/producto/tirtir-mask-fit-red-cushion/',
+     beautyholics:'https://beautyholicsshop.com/products/mask-fit-red-cushion',
+     beautyaddicts:'https://beautyaddicts.pe/products/mask-fit-red-cushion',
+     minna:'https://www.minna.pe/tirtir-mask-fit-red-cushion-foundation-23nsand',
      yesstyle:'https://www.yesstyle.com/en/tirtir-mask-fit-red-cushion-40-colors-55n-espresso/info.html/pid.1117014693',
    },
-   tiendas:['kbcorner','asianshop','topbeauty','newseoul','kumi','beautyholics','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','newseoul','beautyholics','beautyaddicts','minna','kbcorner','topbeauty','kumi','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Piel', cat:'ESENCIA', name:'COSRX · Advanced Snail 96 Mucin',
    q:'cosrx snail 96 mucin essence',
    tones:null,
    cond:s=>s.skinFinish!=='matte',
    directo:{
-     asianshop:'https://asianshop.com.pe/marca/cosrx/',
      yesstyle:'https://www.yesstyle.com/en/cosrx-advanced-snail-96-mucin-power-essence-100ml/info.html/pid.1052684695',
    },
    tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miu','miabeauty','yesstyle','stylevana','oliveyoung']},
@@ -663,9 +677,7 @@ const PRODUCTS=[
    q:'peripera pure blushed sunshine cheek',
    tones:{warm:'#03 Coral / #12 Apricot', cool:'#02 Pink', neutral:'#12 Apricot'},
    cond:s=>true,
-   directo:{
-     asianshop:'https://asianshop.com.pe/producto/peripera-pure-blushed-sunshine-cheek/',
-   },
+   directo:{},
    tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Rubor', cat:'RUBOR (ALTERNATIVA)', name:'Rom&nd · Better Than Cheek',
@@ -681,9 +693,7 @@ const PRODUCTS=[
    q:'romand better than palette',
    tones:{warm:'#08 Peach Dahlia Garden', cool:'Rose / Mauve tones', neutral:'#08 Peach Dahlia Garden'},
    cond:s=>s.shadow!=='none',
-   directo:{
-     asianshop:'https://asianshop.com.pe/producto/romand-better-than-palette-08-peach-dahlia-garden/',
-   },
+   directo:{},
    tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','beautyholics','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Ojos', cat:'DELINEADOR', name:'Clio · Sharp Liner (Kill series)',
@@ -1581,13 +1591,14 @@ function renderProducts(){
       ${p.tones?`<div class="tone">Para tu subtono ${undTxt}: ${p.tones[und]}</div>`:''}
       <div class="links">
         ${principal.map(t=>`<a class="${t.zona==='pe'?'pe':'intl'}" target="_blank" rel="noopener"
-            data-tienda="${t.id}" data-prod="${p.name}" href="${t.url}">${t.nom}${t.zona==='pe'?' · Perú':''}</a>`).join('')}
+            data-tienda="${t.id}" data-prod="${p.name}" href="${t.url}"
+            title="${t.directo?'Ficha del producto':'Búsqueda en la tienda'}">${t.nom}${t.zona==='pe'?' · Perú':''}${t.directo?'':' ⌕'}</a>`).join('')}
       </div>
       ${resto.length?`
       <button class="morebtn" data-more="${i}" aria-expanded="false">+ ${resto.length} tiendas más</button>
       <div class="morestores" id="more-${i}">
         ${resto.map(t=>`<a target="_blank" rel="noopener" data-tienda="${t.id}" data-prod="${p.name}"
-            href="${t.url}">${t.nom}<small>${t.zona==='pe'?'Perú':'Internacional'}${t.directo?' · ficha directa':''}</small></a>`).join('')}
+            href="${t.url}">${t.nom}<small>${t.zona==='pe'?'Perú':'Internacional'} · ${t.directo?'ficha del producto':'búsqueda en la tienda'}</small></a>`).join('')}
       </div>`:''}
     </div>`;
   }).join('');
