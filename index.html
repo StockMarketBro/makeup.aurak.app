@@ -224,6 +224,34 @@
     content:'✦'; position:absolute; top:-9px; right:-7px; color:var(--acento); font-size:12px;
   }
   .swatch:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
+  .swgroup{margin-bottom:14px;}
+  .swgroup h5{
+    font:600 11px/1.3 var(--sans); letter-spacing:.09em; text-transform:uppercase;
+    color:var(--tinta-suave); margin:0 0 8px;
+  }
+  .swcell{display:flex; flex-direction:column; align-items:center; gap:5px; width:52px;}
+  .swcell .code{font-size:10.5px; color:var(--tinta-suave); line-height:1.2; text-align:center;}
+  .swcell .swatch{width:36px; height:36px;}
+  .swcell.on .code{color:var(--lavanda); font-weight:600;}
+  .lipnow{
+    margin-top:4px; padding:11px 13px; border-radius:12px;
+    background:var(--lavanda-bruma); border:1px solid var(--lavanda-borde);
+  }
+  .lipnow b{display:block; font-size:13.5px; color:var(--tinta); margin-bottom:2px;}
+  .lipnow .aprox{font-size:11.5px; color:var(--tinta-suave); line-height:1.4;}
+  .lipnow button{
+    margin-top:9px; background:none; border:1px solid var(--lavanda); color:var(--lavanda);
+    border-radius:999px; padding:6px 13px; font:600 12px var(--sans); cursor:pointer;
+  }
+  .prod.destacado{
+    outline:2px solid var(--lavanda); outline-offset:3px;
+    transition:outline-color .5s;
+  }
+  .probando{
+    display:inline-block; margin-top:6px; font-size:12px; font-weight:600;
+    color:var(--lavanda); background:var(--lavanda-bruma);
+    border-radius:999px; padding:4px 11px;
+  }
 
   /* sliders */
   .slider-row{display:flex; align-items:center; gap:12px; margin:11px 0;}
@@ -428,8 +456,9 @@
       <div class="zonebody" data-body="labios" hidden>
         <div class="opt-label">Estilo de labios</div>
         <div class="chips" id="lipStyleChips"></div>
-        <div class="opt-label">Color</div>
-        <div class="swatches" id="lipSwatches"></div>
+        <div class="opt-label">Color · tonos reales de producto</div>
+        <div id="lipSwatches"></div>
+        <div class="lipnow" id="lipNow"></div>
       </div>
 
       <div class="zonebody" data-body="cejas" hidden>
@@ -507,12 +536,12 @@ const FACE_L=234, FACE_R=454, JAW_L=172, JAW_R=397;
 
 // ---------- Opciones por zona ----------
 const LOOKS={
-  clean:{name:'Clean natural', dot:'#C87F82', set:{lipStyle:'mlbb', lipColor:'#C87F82', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFAFA8',alpha:.22}, glow:.26, aegyo:.14}},
-  sobrio:{name:'Sobrio elegante', dot:'#B4707E', set:{lipStyle:'mlbb', lipColor:'#B4707E', skinFinish:'dewy', shadow:'tierra', liner:'idol', brow:'castano', blush:{color:'#E3A79E',alpha:.18}, glow:.22, aegyo:.12}},
-  peach:{name:'Peach coreano', dot:'#DD8B6A', set:{lipStyle:'mlbb', lipColor:'#DD8B6A', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFA981',alpha:.24}, glow:.26, aegyo:.14}},
-  gradient:{name:'Gradient lips', dot:'#C9505C', set:{lipStyle:'gradient', lipColor:'#C9505C', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EDAEA8',alpha:.20}, glow:.24, aegyo:.14}},
-  glass:{name:'Glass skin', dot:'#DCA3A8', set:{lipStyle:'mlbb', lipColor:'#D0919A', skinFinish:'glass', shadow:'rosa', liner:'idol', brow:'gris', blush:{color:'#F0BCB8',alpha:.18}, glow:.46, aegyo:.20}},
-  idol:{name:'Idol K-pop', dot:'#C25563', set:{lipStyle:'gradient', lipColor:'#C25563', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EC97A5',alpha:.30}, glow:.42, aegyo:.24}}
+  clean:{name:'Clean natural', dot:'#C08573', set:{lipStyle:'mlbb', lipColor:'#C08573', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFAFA8',alpha:.22}, glow:.26, aegyo:.14}},
+  sobrio:{name:'Sobrio elegante', dot:'#BB7A88', set:{lipStyle:'mlbb', lipColor:'#BB7A88', skinFinish:'dewy', shadow:'tierra', liner:'idol', brow:'castano', blush:{color:'#E3A79E',alpha:.18}, glow:.22, aegyo:.12}},
+  peach:{name:'Peach coreano', dot:'#D4706A', set:{lipStyle:'mlbb', lipColor:'#D4706A', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFA981',alpha:.24}, glow:.26, aegyo:.14}},
+  gradient:{name:'Gradient lips', dot:'#B93F4B', set:{lipStyle:'gradient', lipColor:'#B93F4B', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EDAEA8',alpha:.20}, glow:.24, aegyo:.14}},
+  glass:{name:'Glass skin', dot:'#BE6E72', set:{lipStyle:'mlbb', lipColor:'#BE6E72', skinFinish:'glass', shadow:'rosa', liner:'idol', brow:'gris', blush:{color:'#F0BCB8',alpha:.18}, glow:.46, aegyo:.20}},
+  idol:{name:'Idol K-pop', dot:'#B25F68', set:{lipStyle:'gradient', lipColor:'#B25F68', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EC97A5',alpha:.30}, glow:.42, aegyo:.24}}
 };
 const SKIN_FINISHES={
   glass:{name:'Glass skin', dot:'#F6EDF2', glow:.44},
@@ -542,14 +571,30 @@ const LIP_STYLES={
   full:{name:'Color completo', grad:.15, mult:1.15},
   mlbb:{name:'MLBB suave', grad:.35, mult:.75},
 };
-const LIP_COLORS=[
-  {hex:'#C05A63', name:'Rojo suave', tone:'neutral'},
-  {hex:'#A85A6B', name:'Berry suave', tone:'cool'},
-  {hex:'#B4707E', name:'Malva rosa', tone:'cool'},
-  {hex:'#C87F82', name:'Rosa MLBB', tone:'neutral'},
-  {hex:'#CE7F6B', name:'Coral suave', tone:'warm'},
-  {hex:'#DD8B6A', name:'Durazno', tone:'warm'},
+// Tonos REALES de producto, no colores genéricos: lo que el usuario se prueba
+// aquí es el mismo número que va a pedir en la tienda. Los hex son
+// aproximaciones del tono real — se advierte en pantalla, porque ninguna
+// pantalla reproduce un labial con exactitud y prometerlo sería mentir.
+// `q` amarra cada tono a su producto del catálogo de abajo.
+const LIP_PRODUCTS=[
+  {q:'romand juicy lasting tint', marca:'Rom&nd', linea:'Juicy Lasting Tint', shades:[
+    {code:'#01', name:'Pomelo Skin',  hex:'#C08573', tone:'neutral'},
+    {code:'#06', name:'Figfig',       hex:'#B25F68', tone:'neutral'},
+    {code:'#09', name:'Litchi Coral', hex:'#D4706A', tone:'warm'},
+    {code:'#23', name:'Nucadamia',    hex:'#B96A5F', tone:'warm'},
+    {code:'#25', name:'Bare Grape',   hex:'#BB7A88', tone:'cool'},
+  ]},
+  {q:'peripera ink velvet', marca:'Peripera', linea:'Ink Velvet', shades:[
+    {code:'#17', name:'Rosy Nude',    hex:'#BE6E72', tone:'neutral'},
+    {code:'#24', name:'Milky Nude',   hex:'#C98878', tone:'warm'},
+    {code:'#18', name:'Star Plum',    hex:'#A85A6B', tone:'cool'},
+    {code:'#08', name:'Sellout Red',  hex:'#B93F4B', tone:'cool'},
+  ]},
 ];
+const LIP_COLORS = LIP_PRODUCTS.flatMap(P=>P.shades.map(sh=>({
+  ...sh, q:P.q, prod:`${P.marca} · ${P.linea}`, full:`${P.marca} ${P.linea} ${sh.code} ${sh.name}`
+})));
+const lipByHex = hex => LIP_COLORS.find(c=>c.hex===hex) || null;
 
 // ================= TIENDAS Y CATÁLOGO =================
 // CRITERIOS DE ORDEN (aplicados en este orden, ver elegirTiendas):
@@ -1088,7 +1133,7 @@ function computeReco(){
   const set=JSON.parse(JSON.stringify(LOOKS[look].set));
 
   // --- Color de labios afinado al subtono ---
-  const recColor= A.undertone==='warm'?LIP_COLORS[5]: A.undertone==='cool'?LIP_COLORS[2]:LIP_COLORS[3];
+  const recColor= LIP_COLORS.find(c=>c.tone===A.undertone) || LIP_COLORS.find(c=>c.tone==='neutral');
   if(look!=='idol'&&look!=='peach') set.lipColor=recColor.hex;
 
   // --- Ojos: la app decide si conviene abrir la mirada o solo delinear ---
@@ -1185,16 +1230,50 @@ function buildAllChips(){
   chipRow('linerChips', LINERS, settings.liner, k=>{ settings.liner=k; }, reco?.set.liner);
   chipRow('lipStyleChips', LIP_STYLES, settings.lipStyle, k=>{ settings.lipStyle=k; }, reco?.set.lipStyle);
   chipRow('browChips', BROWS, settings.brow, k=>{ settings.brow=k; }, reco?.set.brow);
-  // Swatches de labios
+  // Swatches de labios: un grupo por producto, cada tono con su número real
   const sw=$('lipSwatches'); sw.innerHTML='';
-  for(const c of LIP_COLORS){
-    const b=document.createElement('button');
-    b.className='swatch'+(c.hex===settings.lipColor?' active':'')+(analysis&&c.tone===analysis.undertone?' suggested':'');
-    b.style.background=c.hex;
-    b.title=c.name; b.setAttribute('aria-label',c.name);
-    b.onclick=()=>{ settings.lipColor=c.hex; buildAllChips(); render(); };
-    sw.appendChild(b);
+  for(const P of LIP_PRODUCTS){
+    const g=document.createElement('div'); g.className='swgroup';
+    const h=document.createElement('h5'); h.textContent=`${P.marca} · ${P.linea}`; g.appendChild(h);
+    const row=document.createElement('div'); row.className='swatches';
+    for(const sh of P.shades){
+      const activo = sh.hex===settings.lipColor;
+      const cell=document.createElement('div');
+      cell.className='swcell'+(activo?' on':'');
+      const b=document.createElement('button');
+      b.className='swatch'+(activo?' active':'')+(analysis&&sh.tone===analysis.undertone?' suggested':'');
+      b.style.background=sh.hex;
+      b.title=`${P.marca} ${P.linea} ${sh.code} ${sh.name}`;
+      b.setAttribute('aria-label',b.title);
+      b.setAttribute('aria-pressed',activo);
+      b.onclick=()=>{ settings.lipColor=sh.hex; buildAllChips(); render(); renderProducts(); };
+      const cap=document.createElement('span'); cap.className='code';
+      cap.textContent=sh.code; cap.title=sh.name;
+      cell.append(b,cap); row.appendChild(cell);
+    }
+    g.appendChild(row); sw.appendChild(g);
   }
+  pintarLipNow();
+}
+
+// Ficha del tono que se está probando, con salto al producto en la lista
+function pintarLipNow(){
+  const box=$('lipNow'); if(!box) return;
+  const c=lipByHex(settings.lipColor);
+  if(!c){ box.hidden=true; return; }
+  box.hidden=false;
+  box.innerHTML=`<b>Probando: ${c.prod} ${c.code} ${c.name}</b>
+    <span class="aprox">El tono en pantalla es una aproximación; sobre tu piel
+    el color real cambia un poco.</span>
+    <button type="button" id="irAlProducto">Ver dónde comprarlo →</button>`;
+  const btn=$('irAlProducto');
+  if(btn) btn.onclick=()=>{
+    const card=document.querySelector(`.prod[data-q="${c.q}"]`);
+    if(!card) return;
+    card.scrollIntoView({behavior:'smooth', block:'center'});
+    card.classList.add('destacado');
+    setTimeout(()=>card.classList.remove('destacado'), 2200);
+  };
 }
 // Tabs de zonas
 document.querySelectorAll('.zonetab').forEach(t=>{
@@ -1580,15 +1659,19 @@ function renderProducts(){
   const und=analysis?analysis.undertone:'neutral';
   const undTxt=analysis?analysis.undertoneTxt:'neutro';
   const lista=PRODUCTS.filter(p=>p.cond(settings));
+  const elegido=lipByHex(settings.lipColor);
 
   $('products').innerHTML=lista.map((p,i)=>{
     const {pe,intl,resto}=elegirTiendas(p);
     const principal=[pe[0],intl[0]].filter(Boolean);
+    const probando = elegido && elegido.q===p.q ? elegido : null;
     return `
-    <div class="prod">
+    <div class="prod" data-q="${p.q}">
       <div class="cat">${p.cat}</div>
       <div class="name">${p.name}</div>
-      ${p.tones?`<div class="tone">Para tu subtono ${undTxt}: ${p.tones[und]}</div>`:''}
+      ${probando
+        ? `<div class="probando">Estás probando el ${probando.code} ${probando.name}</div>`
+        : (p.tones?`<div class="tone">Para tu subtono ${undTxt}: ${p.tones[und]}</div>`:'')}
       <div class="links">
         ${principal.map(t=>`<a class="${t.zona==='pe'?'pe':'intl'}" target="_blank" rel="noopener"
             data-tienda="${t.id}" data-prod="${p.name}" href="${t.url}"
