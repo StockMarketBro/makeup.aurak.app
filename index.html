@@ -247,6 +247,7 @@
     outline:2px solid var(--lavanda); outline-offset:3px;
     transition:outline-color .5s;
   }
+  .disp{font-size:11px; color:var(--tinta-suave); margin:6px 0 2px; opacity:.85;}
   .probando{
     display:inline-block; margin-top:6px; font-size:12px; font-weight:600;
     color:var(--lavanda); background:var(--lavanda-bruma);
@@ -537,11 +538,11 @@ const FACE_L=234, FACE_R=454, JAW_L=172, JAW_R=397;
 // ---------- Opciones por zona ----------
 const LOOKS={
   clean:{name:'Clean natural', dot:'#C08573', set:{lipStyle:'mlbb', lipColor:'#C08573', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFAFA8',alpha:.22}, glow:.26, aegyo:.14}},
-  sobrio:{name:'Sobrio elegante', dot:'#BB7A88', set:{lipStyle:'mlbb', lipColor:'#BB7A88', skinFinish:'dewy', shadow:'tierra', liner:'idol', brow:'castano', blush:{color:'#E3A79E',alpha:.18}, glow:.22, aegyo:.12}},
-  peach:{name:'Peach coreano', dot:'#D4706A', set:{lipStyle:'mlbb', lipColor:'#D4706A', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFA981',alpha:.24}, glow:.26, aegyo:.14}},
+  sobrio:{name:'Sobrio elegante', dot:'#B25F68', set:{lipStyle:'mlbb', lipColor:'#B25F68', skinFinish:'dewy', shadow:'tierra', liner:'idol', brow:'castano', blush:{color:'#E3A79E',alpha:.18}, glow:.22, aegyo:.12}},
+  peach:{name:'Peach coreano', dot:'#C67F6E', set:{lipStyle:'mlbb', lipColor:'#C67F6E', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EFA981',alpha:.24}, glow:.26, aegyo:.14}},
   gradient:{name:'Gradient lips', dot:'#B93F4B', set:{lipStyle:'gradient', lipColor:'#B93F4B', skinFinish:'dewy', shadow:'durazno', liner:'idol', brow:'castano', blush:{color:'#EDAEA8',alpha:.20}, glow:.24, aegyo:.14}},
   glass:{name:'Glass skin', dot:'#BE6E72', set:{lipStyle:'mlbb', lipColor:'#BE6E72', skinFinish:'glass', shadow:'rosa', liner:'idol', brow:'gris', blush:{color:'#F0BCB8',alpha:.18}, glow:.46, aegyo:.20}},
-  idol:{name:'Idol K-pop', dot:'#B25F68', set:{lipStyle:'gradient', lipColor:'#B25F68', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EC97A5',alpha:.30}, glow:.42, aegyo:.24}}
+  idol:{name:'Idol K-pop', dot:'#A5545F', set:{lipStyle:'gradient', lipColor:'#A5545F', skinFinish:'glass', shadow:'rosa', liner:'classic', brow:'gris', blush:{color:'#EC97A5',alpha:.30}, glow:.42, aegyo:.24}}
 };
 const SKIN_FINISHES={
   glass:{name:'Glass skin', dot:'#F6EDF2', glow:.44},
@@ -572,23 +573,35 @@ const LIP_STYLES={
   mlbb:{name:'MLBB suave', grad:.35, mult:.75},
 };
 // Tonos REALES de producto, no colores genéricos: lo que el usuario se prueba
-// aquí es el mismo número que va a pedir en la tienda. Los hex son
-// aproximaciones del tono real — se advierte en pantalla, porque ninguna
-// pantalla reproduce un labial con exactitud y prometerlo sería mentir.
-// `q` amarra cada tono a su producto del catálogo de abajo.
+// aquí es el mismo número que va a pedir en la tienda.
+//
+// REGLA DE CURACIÓN: solo entran tonos que alguna tienda peruana tiene EN
+// CATÁLOGO. Verificado leyendo las páginas de producto el 2026-09-06:
+//   · Asian Shop  — Juicy Lasting Tint: 06,10,11,12,13,17,18,22,23,24
+//   · NewSeoul    — Juicy Lasting Tint: 06,11,12,13,17,18,23,24,27
+//   · NewSeoul    — Ink Velvet: 01,02,03,08,15,17,18,20,22,23
+// Los tonos famosos #09 Litchi Coral, #25 Bare Grape (Rom&nd) y #24 Milky
+// Nude (Peripera) NO se venden en Perú: se sacaron de la paleta. Ofrecer un
+// tono que nadie vende es peor que no ofrecerlo.
+//
+// El STOCK no se guarda aquí a propósito: cambia cada semana y un dato
+// hardcodeado se vuelve mentira en días. Ver nota en `stockAviso`.
+// Los hex son aproximaciones del tono real, y así se advierte en pantalla.
+const CATALOGO_REVISADO='6 de septiembre de 2026';
 const LIP_PRODUCTS=[
   {q:'romand juicy lasting tint', marca:'Rom&nd', linea:'Juicy Lasting Tint', shades:[
-    {code:'#01', name:'Pomelo Skin',  hex:'#C08573', tone:'neutral'},
-    {code:'#06', name:'Figfig',       hex:'#B25F68', tone:'neutral'},
-    {code:'#09', name:'Litchi Coral', hex:'#D4706A', tone:'warm'},
+    {code:'#06', name:'Fig Fig',      hex:'#B25F68', tone:'neutral'},
+    {code:'#10', name:'Nudy Peanut',  hex:'#C08573', tone:'neutral'},
+    {code:'#11', name:'Pink Pumpkin', hex:'#CE7263', tone:'warm'},
+    {code:'#18', name:'Mulled Peach', hex:'#C67F6E', tone:'warm'},
     {code:'#23', name:'Nucadamia',    hex:'#B96A5F', tone:'warm'},
-    {code:'#25', name:'Bare Grape',   hex:'#BB7A88', tone:'cool'},
+    {code:'#17', name:'Plum Coke',    hex:'#A5545F', tone:'cool'},
   ]},
   {q:'peripera ink velvet', marca:'Peripera', linea:'Ink Velvet', shades:[
-    {code:'#17', name:'Rosy Nude',    hex:'#BE6E72', tone:'neutral'},
-    {code:'#24', name:'Milky Nude',   hex:'#C98878', tone:'warm'},
-    {code:'#18', name:'Star Plum',    hex:'#A85A6B', tone:'cool'},
-    {code:'#08', name:'Sellout Red',  hex:'#B93F4B', tone:'cool'},
+    {code:'#17', name:'Rosy Nude',       hex:'#BE6E72', tone:'neutral'},
+    {code:'#23', name:'Nutty Nude',      hex:'#C08878', tone:'warm'},
+    {code:'#18', name:'Star Plum Pink',  hex:'#A85A6B', tone:'cool'},
+    {code:'#08', name:'Sellout Red',     hex:'#B93F4B', tone:'cool'},
   ]},
 ];
 const LIP_COLORS = LIP_PRODUCTS.flatMap(P=>P.shades.map(sh=>({
@@ -1264,7 +1277,8 @@ function pintarLipNow(){
   box.hidden=false;
   box.innerHTML=`<b>Probando: ${c.prod} ${c.code} ${c.name}</b>
     <span class="aprox">El tono en pantalla es una aproximación; sobre tu piel
-    el color real cambia un poco.</span>
+    el color real cambia un poco. Los tonos coreanos se agotan seguido: si este
+    no está, la tienda suele tener otros de la misma línea.</span>
     <button type="button" id="irAlProducto">Ver dónde comprarlo →</button>`;
   const btn=$('irAlProducto');
   if(btn) btn.onclick=()=>{
@@ -1672,6 +1686,7 @@ function renderProducts(){
       ${probando
         ? `<div class="probando">Estás probando el ${probando.code} ${probando.name}</div>`
         : (p.tones?`<div class="tone">Para tu subtono ${undTxt}: ${p.tones[und]}</div>`:'')}
+      <div class="disp">Disponibilidad y precio los confirma la tienda</div>
       <div class="links">
         ${principal.map(t=>`<a class="${t.zona==='pe'?'pe':'intl'}" target="_blank" rel="noopener"
             data-tienda="${t.id}" data-prod="${p.name}" href="${t.url}"
