@@ -22,8 +22,17 @@
 <meta name="twitter:description" content="Prueba maquillaje coreano sobre tu propia selfie, gratis y sin que tu foto salga de tu dispositivo.">
 <meta name="twitter:image" content="https://makeup.aurak.app/og-makeup.jpg">
 <link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/icon-192.png" sizes="192x192">
 <link rel="icon" href="/icon-512.png" sizes="512x512">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- iOS ignora el manifest para el icono: usa apple-touch-icon, que debe ser
+     PNG opaco de 180x180 en la raíz del dominio (iOS le pone las esquinas). -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Makeup Aura-K">
+<meta name="application-name" content="Makeup Aura-K">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication",
  "name":"Aura-K Makeup Studio","url":"https://makeup.aurak.app/",

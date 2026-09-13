@@ -1,0 +1,19 @@
+{
+  "name": "Aura-K · Makeup Studio",
+  "short_name": "Makeup Aura-K",
+  "description": "Prueba maquillaje coreano sobre tu propia selfie. Gratis y sin que tu foto salga de tu dispositivo.",
+  "lang": "es-PE",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F5FC",
+  "theme_color": "#9A92CE",
+  "categories": ["beauty", "lifestyle", "shopping"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
