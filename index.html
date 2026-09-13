@@ -12,31 +12,80 @@
 <meta property="og:url" content="https://makeup.aurak.app/">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#9A92CE">
+<meta property="og:image" content="https://makeup.aurak.app/og-makeup.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Aura-K Makeup Studio — prueba maquillaje coreano en tu selfie">
+<meta property="og:locale" content="es_PE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Aura-K · Makeup Studio">
+<meta name="twitter:description" content="Prueba maquillaje coreano sobre tu propia selfie, gratis y sin que tu foto salga de tu dispositivo.">
+<meta name="twitter:image" content="https://makeup.aurak.app/og-makeup.jpg">
+<link rel="icon" href="/favicon-32.png" sizes="32x32">
+<link rel="icon" href="/icon-512.png" sizes="512x512">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication",
+ "name":"Aura-K Makeup Studio","url":"https://makeup.aurak.app/",
+ "applicationCategory":"LifestyleApplication","operatingSystem":"Web",
+ "inLanguage":"es-PE","isAccessibleForFree":true,
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},
+ "description":"Prueba de maquillaje coreano sobre una selfie, procesada en el navegador.",
+ "publisher":{"@type":"Organization","name":"Aura-K","url":"https://www.aurak.app/"}}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Julius+Sans+One&family=Questrial&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Julius+Sans+One&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js"></script>
 <style>
   /* ===== Identidad Aura-K: lavanda #9A92CE + Julius Sans One + ✦ ===== */
   :root{
-    --lavanda:#9A92CE; --lavanda-suave:#C5C0E4; --lavanda-bruma:#EFEDF8;
-    --fondo:#F7F6FB; --blanco:#FFFFFF; --tinta:#332F45; --tinta-media:#8B86A3;
+    --lavanda:#9A92CE; --lavanda-suave:#BBB4E4; --lavanda-bruma:#EDEAF8;
+    --fondo:#F7F5FC; --blanco:#FFFFFF; --tinta:#2E2847; --tinta-media:#6E6685;
     --acento:#E8A5B3; --line:rgba(51,47,69,.08); --radius:20px;
   }
   *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
   body{
-    font-family:'Questrial', system-ui, sans-serif; background:var(--fondo);
+    font-family:'Montserrat', system-ui, sans-serif; background:var(--fondo);
     color:var(--tinta); min-height:100vh; display:flex; flex-direction:column; align-items:center;
   }
   header{
-    width:100%; padding:28px 20px 20px; text-align:center; background:var(--lavanda);
+    width:100%; padding:34px 20px 8px; text-align:center; background:transparent;
   }
-  .eyebrow{font-size:10px; letter-spacing:.4em; color:#fff; opacity:.8; text-indent:.4em;}
+  .switchbar{
+    position:sticky; top:0; z-index:60; width:100%;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:14px 14px calc(14px + env(safe-area-inset-top,0px));
+    background:rgba(247,245,252,.94); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .switcher{
+    display:inline-flex; background:var(--blanco); border-radius:999px; padding:5px;
+    box-shadow:0 2px 10px rgba(46,40,71,.07);
+  }
+  .switcher a,.switcher .on{
+    font-size:15px; padding:9px 30px; border-radius:999px; text-decoration:none;
+    font-weight:500; transition:none;
+  }
+  .switcher a{color:var(--tinta);}
+  .switcher .on{background:var(--lavanda); color:#fff;}
+  .perfil{
+    font-size:11.5px; color:#6F67A8; background:var(--lavanda-bruma);
+    border-radius:999px; padding:4px 12px;
+  }
+  .spark-top{font-size:30px; color:var(--lavanda); line-height:1;}
+  .eyebrow{font-size:11px; letter-spacing:.42em; color:var(--lavanda); text-indent:.42em; margin-top:12px;}
   .wordmark{
-    font-family:'Julius Sans One', sans-serif; font-size:28px; letter-spacing:.5em;
-    color:#fff; text-indent:.5em; margin-top:6px;
+    font-family:'Julius Sans One', sans-serif; font-size:38px; letter-spacing:.16em;
+    color:var(--tinta); text-indent:.16em; margin-top:8px;
   }
-  .wordmark .spark{letter-spacing:0; text-indent:0; font-size:15px; vertical-align:top;}
-  .sub{font-size:11px; letter-spacing:.32em; color:#fff; opacity:.85; margin-top:6px; text-indent:.32em;}
+  .sub{
+    font-size:12px; letter-spacing:.34em; color:var(--lavanda); margin-top:8px;
+    text-indent:.34em;
+  }
+  .pitch{
+    max-width:33ch; margin:16px auto 0; font-size:16px; line-height:1.55;
+    color:var(--tinta-media);
+  }
   header .home{text-decoration:none; display:block;}
   .crosslink{
     display:inline-block; margin-top:14px; text-decoration:none;
@@ -61,7 +110,10 @@
   /* La foto se pega arriba dentro de .stickyzone y se libera sola cuando el
      contenedor termina, justo antes de los productos. Sin JavaScript. */
   .stickyzone{position:relative;}
-  .stagewrap{position:sticky; top:0; z-index:20; background:var(--fondo); padding-bottom:10px;}
+  .stagewrap{
+    position:sticky; top:var(--barra,74px); z-index:20;
+    background:var(--fondo); padding-bottom:10px;
+  }
   .stagewrap.stuck .stage{box-shadow:0 12px 24px rgba(124,107,168,.22);}
   .stagewrap.stuck .compare canvas{max-height:34vh;}
   @media (max-height:700px){ .stagewrap.stuck .compare canvas{max-height:30vh;} }
@@ -73,17 +125,35 @@
     background:var(--blanco); border-radius:var(--radius); overflow:hidden;
     box-shadow:0 8px 28px rgba(154,146,206,.16); position:relative;
   }
-  .dropzone{padding:44px 24px; text-align:center; cursor:pointer;}
-  .dropzone .icon{font-size:32px; color:var(--lavanda);}
-  .dropzone p{margin-top:12px; font-size:15px; line-height:1.5;}
-  .dropzone small{display:block; margin-top:8px; color:var(--tinta-media); font-size:12px;}
-  .btnrow{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  .dropzone{padding:22px 24px 34px; text-align:center;}
+  .circle{
+    width:min(74vw,300px); aspect-ratio:1; margin:0 auto; border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:9px; padding:26px; cursor:pointer; border:1px solid rgba(255,255,255,.9);
+    background:radial-gradient(circle at 50% 38%, #FFFFFF 0%, #F3F0FB 58%, #E4DFF4 100%);
+    box-shadow:0 10px 34px rgba(122,110,175,.16), inset 0 0 0 10px rgba(255,255,255,.42);
+  }
+  .circle:focus-visible{outline:3px solid var(--lavanda); outline-offset:4px;}
+  .circle .icon{font-size:26px; color:var(--lavanda); line-height:1;}
+  .circle b{font-size:17px; font-weight:600; line-height:1.35; max-width:15ch;}
+  .circle em{font-style:normal; font-size:13.5px; color:var(--tinta-media);}
+  .privacidad{margin:18px auto 0; max-width:40ch; font-size:12.5px; color:var(--tinta-media);}
+  .pildoras{
+    list-style:none; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;
+    margin:14px 0 0;
+  }
+  .pildoras li{
+    background:var(--lavanda-bruma); color:#5F58A0; border-radius:999px;
+    padding:7px 16px; font-size:13px;
+  }
+  .btnrow{display:flex; gap:11px; justify-content:center; margin-top:20px; flex-wrap:wrap;}
   .btn{
-    border:none; border-radius:999px; padding:12px 22px; font-family:inherit;
-    font-size:14px; cursor:pointer; letter-spacing:.02em;
+    border:none; border-radius:999px; padding:15px 26px; font-family:inherit;
+    font-size:14px; font-weight:600; cursor:pointer; letter-spacing:.13em;
+    text-transform:uppercase;
   }
   .btn.primary{background:var(--lavanda); color:#fff;}
-  .btn.ghost{background:var(--lavanda-bruma); color:#6F67A8;}
+  .btn.ghost{background:transparent; color:#6F67A8; border:1.5px solid var(--lavanda-suave);}
   .btn:active{transform:scale(.97);}
   .btn:focus-visible{outline:3px solid var(--acento); outline-offset:2px;}
 
@@ -247,6 +317,11 @@
     outline:2px solid var(--lavanda); outline-offset:3px;
     transition:outline-color .5s;
   }
+  .avisopiel{
+    margin:10px 0 4px; padding:11px 13px; border-radius:12px; font-size:12.5px;
+    line-height:1.5; background:var(--lavanda-bruma); color:#5F58A0;
+  }
+  .avisopiel a{color:var(--lavanda); font-weight:600; white-space:nowrap;}
   .disp{font-size:11px; color:var(--tinta-suave); margin:6px 0 2px; opacity:.85;}
   .probando{
     display:inline-block; margin-top:6px; font-size:12px; font-weight:600;
@@ -332,16 +407,22 @@
   }
   #controls{display:none;}
 </style>
-<script type="module" src="/cg-analytics.js"></script>
 </head>
 <body>
 <header>
-  <a class="home" href="https://www.aurak.app/?from=makeup" aria-label="Ir a Aura-K">
-    <div class="eyebrow">K-BEAUTY</div>
-    <div class="wordmark">AURA-K <span class="spark">✦</span></div>
-  </a>
+  <div class="switchbar">
+    <nav class="switcher" aria-label="Cambiar entre las apps de Aura-K">
+      <a href="https://www.aurak.app/?from=makeup">Piel</a>
+      <span class="on" aria-current="page">Maquillaje</span>
+    </nav>
+    <span class="perfil" id="chipPerfil" hidden></span>
+  </div>
+  <div class="spark-top" aria-hidden="true">✦</div>
+  <div class="eyebrow">K-BEAUTY</div>
+  <div class="wordmark">AURA-K</div>
   <div class="sub">MAKEUP STUDIO</div>
-  <a class="crosslink" href="https://www.aurak.app/?from=makeup">Analizar mi piel en Aura-K →</a>
+  <p class="pitch">Sube una selfie y prueba maquillaje coreano sobre tu propio
+    rostro. Te decimos el tono exacto y dónde comprarlo en Perú.</p>
 </header>
 
 <main>
@@ -351,14 +432,18 @@
 <div class="stickyzone" id="stickyzone">
   <div class="stagewrap" id="stagewrap">
   <div class="stage">
-    <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Tomar o subir una foto">
-      <div class="icon">✦</div>
-      <p>Tómate una selfie sin maquillaje<br>o sube una foto desde tu galería</p>
+    <div class="dropzone" id="dropzone">
+      <div class="circle" id="dropCircle" role="button" tabindex="0" aria-label="Tomar o subir una foto">
+        <span class="icon" aria-hidden="true">✦</span>
+        <b>Toca para tomarte una selfie</b>
+        <em>Luz natural · rostro despejado</em>
+      </div>
+      <p class="privacidad">Tu foto se analiza en tu celular y no se guarda en ningún servidor.</p>
+      <ul class="pildoras"><li>Gratis</li><li>30 segundos</li><li>Sin maquillaje</li></ul>
       <div class="btnrow">
         <button class="btn primary" id="btnCamera">Tomar selfie</button>
         <button class="btn ghost" id="btnUpload">Subir foto</button>
       </div>
-      <small>Luz natural · rostro despejado<br>Tu foto se analiza al momento y no se guarda en ningún servidor.</small>
     </div>
 
     <div class="camview" id="camview">
@@ -458,6 +543,7 @@
       <div class="zonebody" data-body="labios" hidden>
         <div class="opt-label">Estilo de labios</div>
         <div class="chips" id="lipStyleChips"></div>
+        <div class="avisopiel" id="avisoPiel" hidden></div>
         <div class="opt-label">Color · tonos reales de producto</div>
         <div id="lipSwatches"></div>
         <div class="lipnow" id="lipNow"></div>
@@ -821,6 +907,33 @@ let landmarks=null, baseImg=null, stream=null, analysis=null;
 let settings={look:'clean', ...JSON.parse(JSON.stringify(LOOKS.clean.set))};
 let quiz={ocasion:null, intensidad:null, vibe:null};
 let reco=null;
+
+// ---------- Perfil que llega desde la app de piel ----------
+// aurak.app enlaza con ?piel=Piel+mixta&focos=brillo+zona+T. No repetimos
+// preguntas que allá ya se respondieron: se usa para sesgar el acabado.
+const perfilPiel=(()=>{
+  const q=new URLSearchParams(location.search);
+  const piel=(q.get('piel')||'').trim();
+  const focos=(q.get('focos')||'').trim();
+  if(!piel && !focos) return null;
+  const t=(piel+' '+focos).toLowerCase();
+  let finish=null, nota=null;
+  if(/grasa|brillo|zona t|seborrea|poros/.test(t)){
+    finish='matte'; nota='Por el brillo en la zona T partimos de un acabado matte.';
+  } else if(/deshidratada|seca|tirantez/.test(t)){
+    finish='glass'; nota='Por tu piel deshidratada partimos de un acabado luminoso, sin polvo.';
+  } else if(/sensible|rosacea|rosácea|rojez|irritad/.test(t)){
+    finish='dewy'; nota='Por tu piel sensible vamos con rubor en crema y acabado suave.';
+  }
+  return {piel, focos, finish, nota};
+})();
+
+function pintarChipPerfil(){
+  const chip=$('chipPerfil'); if(!chip||!perfilPiel) return;
+  const txt=perfilPiel.piel || perfilPiel.focos;
+  if(!txt) return;
+  chip.hidden=false; chip.textContent='de tu análisis: '+txt.toLowerCase();
+}
 const MAXW=1280;
 
 // ---------- DOM ----------
@@ -849,8 +962,13 @@ $('btnCamera').onclick=async e=>{
   }
 };
 $('btnUpload').onclick=e=>{ e.stopPropagation(); fileInput.click(); };
-dropzone.onclick=()=>fileInput.click();
-dropzone.onkeydown=e=>{ if(e.key==='Enter'||e.key===' ') fileInput.click(); };
+// El círculo es el objetivo táctil principal y abre la cámara, como en aurak.app.
+// Antes el clic estaba en todo el bloque, así que tocar un botón disparaba
+// también el selector de archivos.
+$('dropCircle').onclick=()=>$('btnCamera').click();
+$('dropCircle').onkeydown=e=>{
+  if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('btnCamera').click(); }
+};
 fileInput.onchange=e=>{
   const file=e.target.files[0]; if(!file) return;
   showToast('Foto cargada · analizando…');
@@ -1200,6 +1318,13 @@ function computeReco(){
     'almendrados':'un delineado que sigue tu línea natural'
   }[A.eyeShape] || 'un delineado ajustado a tus ojos';
 
+  // --- Compatibilidad con la rutina de piel (si viene de aurak.app) ---
+  if(perfilPiel && perfilPiel.finish){
+    set.skinFinish=perfilPiel.finish;
+    if(perfilPiel.finish==='matte'){ set.glow=Math.min(set.glow,.18); }
+    why += `. ${perfilPiel.nota.replace(/^Por /,'Además, por ').replace(/\.$/,'')}`;
+  }
+
   reco={look, set, k, recColor,
     texto:`Te sugerimos <b>${LOOKS[look].name}</b>: ${why}. ` +
       `Labios en <b>${(look==='idol'||look==='peach'?LOOKS[look].name.toLowerCase():recColor.name.toLowerCase())}</b> ` +
@@ -1256,7 +1381,8 @@ function buildAllChips(){
   chipRow('lookChips', LOOKS, settings.look, k=>{
     settings={look:k, ...JSON.parse(JSON.stringify(LOOKS[k].set))};
   }, reco?.look);
-  chipRow('skinChips', SKIN_FINISHES, settings.skinFinish, k=>{ settings.skinFinish=k; }, reco?.set.skinFinish);
+  chipRow('skinChips', SKIN_FINISHES, settings.skinFinish, k=>{ settings.skinFinish=k; pintarAvisoPiel(); }, reco?.set.skinFinish);
+  pintarAvisoPiel();
   chipRow('shadowChips', SHADOWS, settings.shadow, k=>{ settings.shadow=k; }, reco?.set.shadow);
   chipRow('linerChips', LINERS, settings.liner, k=>{ settings.liner=k; }, reco?.set.liner);
   chipRow('lipStyleChips', LIP_STYLES, settings.lipStyle, k=>{ settings.lipStyle=k; }, reco?.set.lipStyle);
@@ -1288,6 +1414,17 @@ function buildAllChips(){
 }
 
 // Ficha del tono que se está probando, con salto al producto en la lista
+// Elegir matte suele ser síntoma de un problema de piel, no de maquillaje.
+// Es el mejor momento para ofrecer el análisis, sin interrumpir lo que hace.
+function pintarAvisoPiel(){
+  const box=$('avisoPiel'); if(!box) return;
+  const mostrar = settings.skinFinish==='matte' && !perfilPiel;
+  box.hidden=!mostrar;
+  if(mostrar) box.innerHTML=`Si la base se te ve parchosa o no dura, casi siempre
+    es la piel y no el maquillaje.
+    <a href="https://www.aurak.app/?from=makeup&motivo=matte">Analiza tu piel en 30 s →</a>`;
+}
+
 function pintarLipNow(){
   const box=$('lipNow'); if(!box) return;
   const c=lipByHex(settings.lipColor);
@@ -1800,6 +1937,19 @@ function showToast(msg, ms=2600){
   toastTimer=setTimeout(()=>t.classList.remove('show'), ms);
 }
 function showError(msg){ errBox.textContent=msg; errBox.style.display='block'; }
+
+// Chip de perfil: se pinta al cargar, venga o no de la app de piel.
+pintarChipPerfil();
+
+// La barra superior es pegajosa y su alto cambia si aparece el chip de perfil.
+// La foto pegajosa se ancla debajo de ese alto real, no de un número fijo.
+function medirBarra(){
+  const bar=document.querySelector('.switchbar'); if(!bar) return;
+  document.documentElement.style.setProperty('--barra', bar.offsetHeight+'px');
+}
+medirBarra();
+addEventListener('resize', medirBarra);
+addEventListener('orientationchange', medirBarra);
 function hideError(){ errBox.style.display='none'; }
 </script>
 </body>
