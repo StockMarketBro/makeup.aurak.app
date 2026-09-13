@@ -744,11 +744,15 @@ const TIENDAS = {
   beautyholics:{nom:'Beautyholics',     zona:'pe',   web:'https://beautyholicsshop.com',
                 buscar:q=>`https://beautyholicsshop.com/search?q=${encodeURIComponent(q)}`, prioridad:0},
   miabeauty:   {nom:'Mia Beauty Bar',   zona:'pe',   web:'https://miabeautybar.pe',
-                buscar:q=>`https://miabeautybar.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
+                buscar:q=>`https://miabeautybar.pe/?s=${encodeURIComponent(q)}&post_type=product`, prioridad:0},
   miu:         {nom:'Miu K-Beauty',     zona:'pe',   web:'https://miu.pe',
                 buscar:q=>`https://miu.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
+  // Minna y Miu quedan registradas pero SIN productos asignados.
+  // Minna es Next.js con rutas /productos/marca/<MARCA> y no tiene buscador por
+  // query; Miu devuelve 0 resultados para romand, tirtir y laneige. Reactivarlas
+  // solo cuando haya ruta verificada o stock real.
   minna:       {nom:'Minna',            zona:'pe',   web:'https://www.minna.pe',
-                buscar:q=>`https://www.minna.pe/buscar?q=${encodeURIComponent(q)}`, prioridad:0},
+                buscar:q=>`https://www.minna.pe/marcas`, prioridad:0},
   beautyaddicts:{nom:'Beauty Addicts',  zona:'pe',   web:'https://beautyaddicts.pe',
                 buscar:q=>`https://beautyaddicts.pe/search?q=${encodeURIComponent(q)}`, prioridad:0},
   // --- Internacionales ---
@@ -777,9 +781,8 @@ const PRODUCTS=[
    directo:{
      asianshop:'https://asianshop.com.pe/producto/romand-juicy-lasting-tint/',
      newseoul:'https://newseoul.com.pe/producto/romand-juicy-lasting-tint/',
-     yesstyle:'https://www.yesstyle.com/en/romand-the-juicy-lasting-tint-23-colors-01-pomelo-skin/info.html/pid.1134228333',
    },
-   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Labios', cat:'TINTE VELVET (GRADIENT)', name:'Peripera · Ink Velvet',
    q:'peripera ink velvet',
@@ -787,9 +790,8 @@ const PRODUCTS=[
    directo:{
      asianshop:'https://asianshop.com.pe/producto/peripera-ink-velvet-tint/',
      newseoul:'https://newseoul.com.pe/producto/peripera-ink-velvet/',
-     yesstyle:'https://www.yesstyle.com/en/peripera-ink-velvet-31-colors-19-love-sniper-red/info.html/pid.1057853640',
    },
-   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','beautyholics','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Labios', cat:'PREPARACIÓN DE LABIOS', name:'Laneige · Lip Sleeping Mask',
    q:'laneige lip sleeping mask',
@@ -799,7 +801,7 @@ const PRODUCTS=[
      asianshop:'https://asianshop.com.pe/producto/laneige-lip-sleeping-mask/',
      yesstyle:'https://www.yesstyle.com/en/laneige-lip-sleeping-mask-ex-berry-new-mint-choco-ex/info.html/pid.1039417845',
    },
-   tiendas:['asianshop','kbcorner','topbeauty','kumi','miu','miabeauty','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Piel', cat:'CUSHION', name:'TIRTIR · Mask Fit Red Cushion',
    q:'tirtir mask fit red cushion',
@@ -810,10 +812,8 @@ const PRODUCTS=[
      newseoul:'https://newseoul.com.pe/producto/tirtir-mask-fit-red-cushion/',
      beautyholics:'https://beautyholicsshop.com/products/mask-fit-red-cushion',
      beautyaddicts:'https://beautyaddicts.pe/products/mask-fit-red-cushion',
-     minna:'https://www.minna.pe/tirtir-mask-fit-red-cushion-foundation-23nsand',
-     yesstyle:'https://www.yesstyle.com/en/tirtir-mask-fit-red-cushion-40-colors-55n-espresso/info.html/pid.1117014693',
    },
-   tiendas:['asianshop','newseoul','beautyholics','beautyaddicts','minna','kbcorner','topbeauty','kumi','miabeauty','miu','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','newseoul','beautyholics','beautyaddicts','kbcorner','topbeauty','kumi','miabeauty','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Piel', cat:'ESENCIA', name:'COSRX · Advanced Snail 96 Mucin',
    q:'cosrx snail 96 mucin essence',
@@ -823,7 +823,7 @@ const PRODUCTS=[
      asianshop:'https://asianshop.com.pe/producto/cosrx-advanced-snail-96-mucin-power-essence/',
      yesstyle:'https://www.yesstyle.com/en/cosrx-advanced-snail-96-mucin-power-essence-100ml/info.html/pid.1052684695',
    },
-   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miu','miabeauty','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Piel', cat:'SÉRUM GLOW', name:'Beauty of Joseon · Glow Serum',
    q:'beauty of joseon glow serum propolis',
@@ -832,14 +832,14 @@ const PRODUCTS=[
    directo:{
      yesstyle:'https://www.yesstyle.com/en/beauty-of-joseon-glow-serum-30ml/info.html/pid.1089210994',
    },
-   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miu','miabeauty','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Rubor', cat:'RUBOR', name:'Peripera · Pure Blushed Sunshine Cheek',
    q:'peripera pure blushed sunshine cheek',
    tones:{warm:'#03 Coral / #12 Apricot', cool:'#02 Pink', neutral:'#12 Apricot'},
    cond:s=>true,
    directo:{},
-   tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Rubor', cat:'RUBOR (ALTERNATIVA)', name:'Rom&nd · Better Than Cheek',
    q:'romand better than cheek',
@@ -848,21 +848,21 @@ const PRODUCTS=[
    directo:{
      yesstyle:'https://www.yesstyle.com/en/romand-better-than-cheek-new-9-colors-c04-pear-chip/info.html/pid.1117526059',
    },
-   tiendas:['kbcorner','asianshop','topbeauty','kumi','beautyholics','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana']},
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana']},
 
   {zone:'Ojos', cat:'PALETA DE SOMBRAS', name:'Rom&nd · Better Than Palette',
    q:'romand better than palette',
    tones:{warm:'#08 Peach Dahlia Garden', cool:'Rose / Mauve tones', neutral:'#08 Peach Dahlia Garden'},
    cond:s=>s.shadow!=='none',
    directo:{},
-   tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','beautyholics','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Ojos', cat:'DELINEADOR', name:'Clio · Sharp Liner (Kill series)',
    q:'clio sharp liner',
    tones:{warm:'Marrón cacao', cool:'Negro / gris', neutral:'Marrón oscuro'},
    cond:s=>s.liner!=='none',
    directo:{},
-   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','newseoul','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   // ⚠️ ENTRADA GENÉRICA — pendiente de reemplazar por un producto concreto.
   // No pude confirmar ningún lápiz de cejas de marca coreana en catálogo peruano.
@@ -874,16 +874,15 @@ const PRODUCTS=[
    tones:{warm:'Castaño cálido', cool:'Gris-marrón', neutral:'Castaño medio'},
    cond:s=>s.brow!=='none',
    directo:{},
-   tiendas:['asianshop','kbcorner','topbeauty','kumi','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana']},
+   tiendas:['asianshop','kbcorner','topbeauty','kumi','miabeauty','beautyaddicts','yesstyle','stylevana']},
 
   {zone:'Brillo', cat:'ILUMINADOR', name:'Clio · Prism Air Highlighter',
    q:'clio prism air highlighter',
    tones:{warm:'#01 Gold Sheer', cool:'#02 Fairy Pink', neutral:'#01 Gold Sheer'},
    cond:s=>s.skinFinish!=='matte',
    directo:{
-     yesstyle:'https://www.yesstyle.com/en/clio-prism-air-highlighter-4-colors-04-pink-sparkling/info.html/pid.1067975890',
    },
-   tiendas:['kbcorner','asianshop','topbeauty','kumi','miabeauty','miu','minna','beautyaddicts','yesstyle','stylevana','oliveyoung']},
+   tiendas:['kbcorner','asianshop','topbeauty','kumi','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 ];
 
 // ---------- Contador de visitas (centralizado en aurak.app) ----------
@@ -1785,6 +1784,16 @@ function semanaISO(){
 }
 const ROT = semanaISO();
 
+// Si el producto es uno de los de labios y hay un tono elegido, la búsqueda
+// lleva ese tono: "romand juicy lasting tint 23 nucadamia" en vez de la línea
+// entera. Así la tienda abre en lo que la persona acaba de probarse.
+function queryDe(p){
+  const base = p.q || p.name;
+  const c = lipByHex(settings.lipColor);
+  if(c && c.q===p.q) return `${base} ${c.code.replace('#','')} ${c.name}`;
+  return base;
+}
+
 // Devuelve las tiendas de un producto ya ordenadas según los criterios.
 function elegirTiendas(p){
   const lista=(p.tiendas||[]).filter(id=>TIENDAS[id]).map((id,i)=>{
@@ -1792,7 +1801,7 @@ function elegirTiendas(p){
     const directo=(p.directo||{})[id];
     return {
       id, nom:t.nom, zona:t.zona,
-      url:(directo || t.buscar(p.q||p.name)) + (AFILIADO[id]||''),
+      url:(directo || t.buscar(queryDe(p))) + (AFILIADO[id]||''),
       directo:!!directo,
       prioridad:t.prioridad||0,
       precio:(p.precios||{})[id],
