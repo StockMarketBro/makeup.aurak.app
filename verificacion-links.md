@@ -122,3 +122,85 @@ Tres caminos posibles, en orden de esfuerzo:
 Beauty of Joseon Glow Serum (Asian Shop trae otros BoJ pero no este),
 Peripera Pure Blushed Sunshine Cheek, Rom&nd Better Than Cheek,
 Rom&nd Better Than Palette, Clio Sharp Liner, Clio Prism Air Highlighter, cejas.
+
+
+---
+
+# Tercera pasada — 13 de septiembre de 2026
+
+Se verificaron a mano las cuatro URLs propuestas en la auditoría externa.
+
+| URL propuesta | Resultado de mi verificación |
+|---|---|
+| `asianshop.com.pe/producto/etude-drawing-eye-brow/` | ✅ Existe · S/ 29 · ⚠️ **los 6 tonos agotados**, página marcada "Sin stock" |
+| `asianshop.com.pe/producto/beauty-of-joseon-glow-serum-propolis-niacinamide/` | ⬜ No verificada |
+| `topbeauty.pe/products/beauty-of-joseon-glow-serum-propolis-niacinamide/` | ⬜ No verificada |
+| `newseoul.com.pe/producto/romand-better-than-palette/` | ⬜ No verificada |
+
+## Cejas: producto real en lugar del genérico
+
+El genérico `lapiz de cejas` se reemplazó por **ETUDE · Drawing Eye Brow**, con su
+ficha de Asian Shop y tonos por subtono (#03 Brown cálido, #02 Gray Brown frío,
+#06 Ash Brown neutro). Corrige el comentario anterior del código, que afirmaba
+que no había lápiz de cejas coreano en Perú. Sí lo hay.
+
+**Pero hoy está agotado en los seis tonos.** La URL queda cargada porque es
+correcta y el stock nunca se guarda en el código, pero si en la próxima revisión
+sigue agotado, conviene sacar el producto del catálogo en vez de mandar tráfico
+a una página que no se puede comprar.
+
+## Nota sobre el meta de disponibilidad
+
+Este caso confirma lo anterior desde el otro lado: cuando **todas** las variantes
+están agotadas, Asian Shop sí reporta `Sin existencias` a nivel de página. Cuando
+solo **algunas** lo están, reporta `instock` (el caso del Juicy Lasting Tint, con
+8 de 10 tonos agotados). Es decir: el meta sirve para detectar el 100 % agotado,
+pero no para saber si un tono concreto está disponible.
+
+
+---
+
+# Cuarta pasada — 13 de septiembre de 2026 (verificación en vivo)
+
+| URL | Resultado |
+|---|---|
+| `newseoul.com.pe/producto/romand-better-than-palette/` | ✅ S/ 90 (−22 %) · 6 colores · carrito activo · **con stock** |
+| `asianshop.com.pe/producto/beauty-of-joseon-glow-serum-propolis-niacinamide/` | ✅ S/ 80 · "Hay existencias" · sin variantes · **con stock** |
+| `asianshop.com.pe/producto/etude-drawing-eye-brow/` | ✅ Existe · S/ 29 · ⚠️ los 6 tonos agotados |
+| `topbeauty.pe/products/beauty-of-joseon-glow-serum-...` | ⬜ No verificada (no hacía falta: Asian Shop ya cubre el botón Perú) |
+
+**Productos con ficha peruana: 8 de 12.**
+
+## Bug corregido en el archivo entregado
+
+La edición de cejas de la pasada anterior insertó el bloque **antes del
+`<!DOCTYPE`**, fuera del `<script>`, y dejó la entrada genérica sin reemplazar.
+Se habría visto código suelto en la cabecera de la página. Reparado y verificado
+con un test que ahora comprueba que el archivo empieza en `<!DOCTYPE html>`.
+
+## Rom&nd tiene DOS líneas distintas con numeración propia
+
+NewSeoul vende las dos por separado, y esto explica toda la confusión anterior:
+
+| Página | Tonos |
+|---|---|
+| `romand-juicy-lasting-tint` | 06 Fig Fig · 11 Pink Pumpkin · 12 Cherry Bomb · 13 Eat Dotori · 17 Plum Coke · 18 Mulled Peach · 23 Nucadamia · 24 Peeling Angdoo · 27 Pink Popsicle |
+| `romand-the-juicy-lasting-tint` | 01 Pomelo Skin · 02 Nucadamia · 03 Bare Grape · 04 Fig Fig · 05 Jujube · 06 Peeling Angdoo · 08 Pink Pumpkin · 09 Mulled Peach · … |
+
+Es la misma fórmula renumerada. Nuestra paleta usa la numeración de la primera,
+pero el producto se llamaba "Rom&nd · **The** Juicy Lasting Tint" — el nombre de
+la segunda. Se corrigió el nombre.
+
+Consecuencia: el link de YesStyle con `01-pomelo-skin` que se descartó **no era
+un error de YesStyle**, era la numeración de la línea nueva. Descartarlo siguió
+siendo correcto, porque nuestra paleta no usa esa numeración.
+
+## Los cuatro que siguen sin ficha peruana
+
+Peripera Pure Blushed Sunshine Cheek · Rom&nd Better Than Cheek ·
+Clio Sharp Liner · Clio Prism Air Highlighter.
+
+Los cuatro son maquillaje de color. Asian Shop no tiene categorías de rubor,
+delineador ni iluminador; el siguiente sitio donde buscar es **K-Beauty Corner**,
+que sí tiene Maquillaje → Ojos / Labios / Rostro y colecciones de Peripera y
+Rom&nd.

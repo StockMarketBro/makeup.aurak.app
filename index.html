@@ -775,7 +775,7 @@ const AFILIADO = {};
 // Al agregar links nuevos, ábrelos antes: si no muestran el producto, no van aquí.
 // `precio` es opcional (soles para Perú); solo se usa si USAR_PRECIO es true.
 const PRODUCTS=[
-  {zone:'Labios', cat:'TINTE DE LABIOS', name:'Rom&nd · The Juicy Lasting Tint',
+  {zone:'Labios', cat:'TINTE DE LABIOS', name:'Rom&nd · Juicy Lasting Tint',
    q:'romand juicy lasting tint',
    cond:s=>true,
    directo:{
@@ -830,6 +830,7 @@ const PRODUCTS=[
    tones:null,
    cond:s=>s.skinFinish!=='matte',  // sirve para dewy y glass
    directo:{
+     asianshop:'https://asianshop.com.pe/producto/beauty-of-joseon-glow-serum-propolis-niacinamide/',
      yesstyle:'https://www.yesstyle.com/en/beauty-of-joseon-glow-serum-30ml/info.html/pid.1089210994',
    },
    tiendas:['asianshop','kbcorner','topbeauty','newseoul','kumi','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
@@ -854,7 +855,9 @@ const PRODUCTS=[
    q:'romand better than palette',
    tones:{warm:'#08 Peach Dahlia Garden', cool:'Rose / Mauve tones', neutral:'#08 Peach Dahlia Garden'},
    cond:s=>s.shadow!=='none',
-   directo:{},
+   directo:{
+     newseoul:'https://newseoul.com.pe/producto/romand-better-than-palette/',
+   },
    tiendas:['asianshop','kbcorner','topbeauty','kumi','newseoul','beautyholics','miabeauty','beautyaddicts','yesstyle','stylevana','oliveyoung']},
 
   {zone:'Ojos', cat:'DELINEADOR', name:'Clio · Sharp Liner (Kill series)',
@@ -869,11 +872,17 @@ const PRODUCTS=[
   // Sí están verificados en Asian Shop, aunque no son coreanos:
   // FLOWER KNOWS Sweetie Bear Brow Gel & Pencil (S/39) y CATHY DOLL Shave & Draw (S/29).
   // Mientras tanto el buscador va con 'lapiz de cejas', que sí devuelve resultados.
-  {zone:'Cejas', cat:'CEJAS', name:'Lápiz o sombra de cejas',
-   q:'lapiz de cejas',
-   tones:{warm:'Castaño cálido', cool:'Gris-marrón', neutral:'Castaño medio'},
+  // ETUDE Drawing Eye Brow — ficha verificada el 13-09-2026 en Asian Shop (S/ 29).
+  // OJO: ese día los SEIS tonos (01 Dark Brown … 06 Ash Brown) estaban agotados.
+  // La URL es correcta y por eso queda como ficha directa; el stock no se guarda
+  // en el código. Si sigue agotada en la próxima revisión, sacar el producto.
+  {zone:'Cejas', cat:'CEJAS', name:'ETUDE · Drawing Eye Brow',
+   q:'etude drawing eye brow',
+   tones:{warm:'#03 Brown', cool:'#02 Gray Brown', neutral:'#06 Ash Brown'},
    cond:s=>s.brow!=='none',
-   directo:{},
+   directo:{
+     asianshop:'https://asianshop.com.pe/producto/etude-drawing-eye-brow/',
+   },
    tiendas:['asianshop','kbcorner','topbeauty','kumi','miabeauty','beautyaddicts','yesstyle','stylevana']},
 
   {zone:'Brillo', cat:'ILUMINADOR', name:'Clio · Prism Air Highlighter',
